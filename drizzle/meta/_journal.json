@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1778888063137,
+      "tag": "0000_aspiring_magik",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1779158317610,
+      "tag": "0001_optimal_stellaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780628501559,
+      "tag": "0002_nice_hannibal_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1781228316728,
+      "tag": "0003_cloudy_blur",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1781229948660,
+      "tag": "0004_happy_butterfly",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `user_stats` ADD `last_milestone_shown` integer DEFAULT 0;

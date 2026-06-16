@@ -1,0 +1,2 @@
+ALTER TABLE `user_stats` ADD `best_streak` integer DEFAULT 0;--> statement-breakpoint
+ALTER TABLE `user_stats` ADD `first_active_date` text;

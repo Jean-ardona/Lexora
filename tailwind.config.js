@@ -1,90 +1,29 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // NOTE: Update this to include the paths to all files that contain Nativewind classes.
   content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      colors: {
-        // --- Brand ---
-        primary: {
-          DEFAULT: "#F5A623",   // dark mode
-          light: "#D97706",     // light mode
-          muted: "#2A2210",     // dark bg subtle
-          50: "#FFFBEB",
-          100: "#FEF3C7",
-          200: "#FFD166",
-          400: "#F5A623",
-          600: "#D97706",
-          800: "#92400E",
-        },
-
-        // --- Backgrounds ---
-        background: {
-          DEFAULT: "#111118",   // dark
-          light: "#FAFAFA",     // light
-        },
-        surface: {
-          DEFAULT: "#1C1C28",   // dark card
-          light: "#FFFFFF",     // light card
-          elevated: {
-            DEFAULT: "#252535", // dark elevated
-            light: "#F5F5F5",   // light elevated
-          },
-        },
-
-        // --- Text ---
-        content: {
-          primary: {
-            DEFAULT: "#FFFFFF",
-            light: "#111827",
-          },
-          secondary: {
-            DEFAULT: "#C4C4D4",
-            light: "#4B5563",
-          },
-          muted: {
-            DEFAULT: "#8E8E9E",
-            light: "#6B7280",
-          },
-        },
-
-        // --- Semantic ---
-        success: {
-          DEFAULT: "#10B981",
-          light: "#059669",
-        },
-        danger: {
-          DEFAULT: "#EF4444",
-          light: "#DC2626",
-        },
-
-        // --- Borders ---
-        border: {
-          DEFAULT: "#2A2A3A",
-          light: "#E5E7EB",
-          strong: {
-            DEFAULT: "#3A3A4A",
-            light: "#D1D5DB",
-          },
-        },
+      fontFamily : {
+        "geist" : ['Geist-Regular'],
+        "geist-bold" : ['Geist-Bold'],
+        "inter" : ['Inter-Regular'],
+        "inter-bold" : ['Inter-Bold'],
       },
-
-      fontFamily: {
-        'playfair': ['PlayfairDisplay_700Bold'],
-        'playfair-regular': ['PlayfairDisplay_400Regular'],
-        'playfair-black': ['PlayfairDisplay_800ExtraBold'],
-        'inter': ['Inter_400Regular'],
-        'inter-medium': ['Inter_500Medium'],
-        'inter-semibold': ['Inter_600SemiBold'],
-        'inter-bold': ['Inter_700Bold'],
-      },
-
-      borderRadius: {
-        xl: "16px",
-        "2xl": "20px",
-        "3xl": "28px",
-      },
+      colors:{
+          bg:{light : "#FAF8F4",dark : "#131210", streakLight : "#FFF7EC", streakDark : "#1F1508", cardLight : "#FFFFFF", cardDark : "#1E1C19"},
+          primary:{light : "#1A1714",dark : "#F5F2ED"},
+          secondary:{light : "#6B6560",dark : "#9B9088"},
+          muted:{light : "#A89F96",dark : "#5C5651"},
+          accent:{DEFAULT : "#E85D26"},
+          accentSoft:{light : "#FDE8DC", dark: "#2A1A0F"},
+          accentText:{light : "#C44A18", dark: "#F07A4A"},
+          border:{light : "#1a171417",dark : "#f5f2ed12", streakLight : "#F5C887", streakDark : "#6B4A12"},
+          borderMedium:{light : "#1a171424",dark : "#f5f2ed1f"},
+          shadow:{cardLight : "0 2px 16px rgba(26,23,20,0.06), 0 1px 4px rgba(26,23,20,0.04)", cardDark : "0 2px 20px rgba(0,0,0,0.35), 0 1px 6px rgba(0,0,0,0.25)", btnLight : "0 2px 8px rgba(26,23,20,0.08), 0 1px 3px rgba(26,23,20,0.05)", btnDark : "0 2px 10px rgba(0,0,0,0.25), 0 1px 4px rgba(0,0,0,0.15)"},
+      }
     },
   },
   plugins: [],
-};
+}

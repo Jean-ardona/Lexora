@@ -1,148 +1,213 @@
-import { useTheme } from '@/hooks/useTheme';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import AskAIButton from "@/components/AskAiBtn";
+import StreakCard from "@/components/StreakCard";
+import { WordCard } from '@/components/WordCard';
+import { Ionicons } from "@expo/vector-icons";
+import { Link, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+    ActivityIndicator,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { useTheme } from "../../context/ThemeContext";
+import {
+    checkAndUpdateLearningMilestone,
+    checkAndUpdateStreak,
+    getTodayDrop,
+} from '../../db/actions';
 
-const WORD_OF_THE_DAY = {
-  word: 'Serendipity',
-  phonetic: '/ˌser.ənˈdɪp.ɪ.ti/',
-  type: 'noun',
-  definition:
-    'The occurrence of events by chance in a happy or beneficial way; a fortunate accident.',
-  examples: [
-    'Finding that old letter was pure serendipity.',
-    'Their meeting was a wonderful act of serendipity.',
-  ],
-  streak: 7,
-};
+export default function Index() {
+  const { isDark } = useTheme();
+  const [word, setWord] = useState<any>(null);
+  const [streak, setStreak] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [milestone, setMilestone] = useState<number | null>(null); // nb de mots au milestone
 
-export default function HomeScreen() {
-  const theme = useTheme();
+  // ── useFocusEffect : se relance à chaque fois qu'on revient sur l'écran ──
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          const [todayDrop, streakResult, milestoneResult] = await Promise.all([
+            getTodayDrop(),
+            checkAndUpdateStreak(),
+            checkAndUpdateLearningMilestone(),
+          ]);
+
+          setWord(todayDrop);
+          setStreak(streakResult.streak);
+
+          // Si c'est un nouveau milestone → on affiche l'overlay
+          if (milestoneResult.isNewMilestone) {
+            setMilestone(milestoneResult.wordsLearned);
+          }
+        } catch (error) {
+          console.error("Error fetching home data:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
+    }, [])
+  );
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-bg-light dark:bg-bg-dark">
+        <ActivityIndicator size="large" color="#E8410A" />
+      </View>
+    );
+  }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={{ padding: 24, paddingTop: 60 }}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <View>
-          <Text style={{ fontSize: 13, color: theme.textMuted, letterSpacing: 1.5, textTransform: 'uppercase' }}>
-            Word of the Day
-          </Text>
-          <Text style={{ fontSize: 28, fontWeight: '700', color: theme.textPrimary, marginTop: 2 }}>
-            Lexora
-          </Text>
-        </View>
+    <View className="flex-1 bg-bg-light dark:bg-bg-dark pt-14 px-6">
 
-        {/* Streak badge */}
-        <View style={{
-          backgroundColor: theme.primaryLight,
-          borderRadius: 20,
-          paddingHorizontal: 14,
-          paddingVertical: 8,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 6,
-        }}>
-          <Text style={{ fontSize: 16 }}>🔥</Text>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: theme.primary }}>
-            {WORD_OF_THE_DAY.streak} days
-          </Text>
+      {/* ── Milestone Overlay ── */}
+      <Modal
+        visible={milestone !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMilestone(null)}
+      >
+        <View
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: 32 }}
+        >
+          <View
+            style={{
+              backgroundColor: isDark ? '#1E1C19' : '#fff',
+              borderRadius: 28,
+              padding: 32,
+              alignItems: 'center',
+              width: '100%',
+            }}
+          >
+            <Text style={{ fontSize: 64, marginBottom: 12 }}>🎉</Text>
+            <Text
+              style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 32, color: '#E8410A', marginBottom: 8 }}
+            >
+              {milestone} words!
+            </Text>
+            <Text
+              style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 22, marginBottom: 12 }}
+              className="dark:text-primary-dark"
+            >
+              New milestone reached!
+            </Text>
+            <Text
+              className="text-[13px] text-muted-light dark:text-muted-dark text-center leading-6"
+              style={{ marginBottom: 28 }}
+            >
+              You've learned {milestone} words. Keep the streak going — you're building something real. 🔥
+            </Text>
+            <Pressable
+              onPress={() => setMilestone(null)}
+              style={{
+                backgroundColor: '#E8410A',
+                borderRadius: 16,
+                paddingVertical: 14,
+                paddingHorizontal: 40,
+              }}
+            >
+              <Text style={{ color: '#fff', fontFamily: 'Geist-Bold', fontSize: 15 }}>
+                Let's keep going!
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Header ── */}
+      <View className="flex-row items-center justify-between pb-3 border-b border-b-border-light dark:border-b-border-dark">
+        <View className="flex-row gap-2 items-center justify-center">
+          <Ionicons name="flame-outline" size={32} color="#E85D26" />
+          <View>
+            <Text className="dark:text-primary-dark tracking-[3px] font-inter text-sm">DAILY</Text>
+            <View className="flex-row -mt-2 ml-[1px]">
+              <Text className="dark:text-primary-dark font-geist-bold text-3xl">DR</Text>
+              <Text className="text-accent font-geist-bold text-3xl">O</Text>
+              <Text className="dark:text-primary-dark font-geist-bold text-3xl">P</Text>
+            </View>
+          </View>
+        </View>
+        <View className="flex-row gap-6 items-center">
+          <Link href="/history" asChild>
+            <TouchableOpacity>
+              <Ionicons name="time-outline" size={26} color={isDark ? "#eee" : "#000"} />
+            </TouchableOpacity>
+          </Link>
+          <Link href="/settings" asChild>
+            <TouchableOpacity>
+              <Ionicons name="settings-outline" size={24} color={isDark ? "#eee" : "#000"} />
+            </TouchableOpacity>
+          </Link>
         </View>
       </View>
 
-      {/* Word card */}
-      <View style={{
-        backgroundColor: theme.surface,
-        borderRadius: 24,
-        padding: 24,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: theme.border,
-      }}>
-        {/* Type badge */}
-        <View style={{
-          alignSelf: 'flex-start',
-          backgroundColor: theme.primaryMuted,
-          borderRadius: 8,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-          marginBottom: 12,
-        }}>
-          <Text style={{ fontSize: 12, fontWeight: '600', color: theme.primary, textTransform: 'uppercase', letterSpacing: 1 }}>
-            {WORD_OF_THE_DAY.type}
-          </Text>
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 30 }}
+      >
+        {/* ── Streak Card ── */}
+        <View className="py-3 flex-row items-center justify-center">
+          <StreakCard streak={streak} label="Daily streak" />
         </View>
 
-        {/* Word + phonetic */}
-        <Text style={{ fontSize: 38, fontWeight: '800', color: theme.textPrimary, letterSpacing: -0.5 }}>
-          {WORD_OF_THE_DAY.word}
-        </Text>
-        <Text style={{ fontSize: 15, color: theme.textMuted, marginTop: 4, marginBottom: 16 }}>
-          {WORD_OF_THE_DAY.phonetic}
-        </Text>
-
-        {/* Divider */}
-        <View style={{ height: 1, backgroundColor: theme.border, marginBottom: 16 }} />
-
-        {/* Definition */}
-        <Text style={{ fontSize: 16, color: theme.textSecondary, lineHeight: 24 }}>
-          {WORD_OF_THE_DAY.definition}
-        </Text>
-      </View>
-
-      {/* Examples card */}
-      <View style={{
-        backgroundColor: theme.surface,
-        borderRadius: 24,
-        padding: 24,
-        marginBottom: 32,
-        borderWidth: 1,
-        borderColor: theme.border,
-      }}>
-        <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>
-          Examples
-        </Text>
-        {WORD_OF_THE_DAY.examples.map((example, i) => (
-          <View key={i} style={{ flexDirection: 'row', gap: 10, marginBottom: i === 0 ? 10 : 0 }}>
-            <View style={{ width: 3, borderRadius: 2, backgroundColor: theme.primary, marginTop: 4 }} />
-            <Text style={{ flex: 1, fontSize: 15, color: theme.textSecondary, lineHeight: 22, fontStyle: 'italic' }}>
-              "{example}"
+        {/* ── Word of the day ── */}
+        <View className="py-3">
+          <View className="flex-row items-center pb-3">
+            <View className="w-8 h-1 bg-accent" />
+            <Text
+              className="text-sm text-muted-light dark:text-muted-dark uppercase tracking-widest ml-2"
+              style={{ fontFamily: 'serif' }}
+            >
+              Word of the day
             </Text>
           </View>
-        ))}
-      </View>
 
-      {/* CTA Buttons */}
-      <Pressable
-        style={{
-          backgroundColor: theme.primary,
-          borderRadius: 16,
-          paddingVertical: 18,
-          alignItems: 'center',
-          marginBottom: 12,
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: '700', color: theme.textOnPrimary }}>
-          Practice this word →
-        </Text>
-      </Pressable>
+          {word ? (
+            <WordCard
+              word={word.term}
+              phonetic={word.phonetic ? `/${word.phonetic}/` : undefined}
+              type={word.type ? word.type.slice(0, 3) : undefined}
+              definition={word.definition}
+              examples={[
+                { sentence: word.examples?.[0] || '', highlighted: word.term },
+                { sentence: word.examples?.[1] || '', highlighted: word.term },
+              ]}
+            />
+          ) : (
+            <Text className="text-muted-light dark:text-muted-dark text-center py-8">
+              You've learned all available words!
+            </Text>
+          )}
 
-      <Pressable
-        style={{
-          backgroundColor: theme.surface,
-          borderRadius: 16,
-          paddingVertical: 18,
-          alignItems: 'center',
-          borderWidth: 1,
-          borderColor: theme.border,
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: '600', color: theme.textSecondary }}>
-          ✨ Ask AI about this word
-        </Text>
-      </Pressable>
+          <AskAIButton onPress={() => console.log('Ask AI pressed!')} />
 
-    </ScrollView>
+          {/* ── Let's Practice ── */}
+          <Link href="/quiz" asChild>
+            <TouchableOpacity
+              className="mt-5 flex-row items-center justify-center gap-2 py-4 rounded-2xl"
+              style={{
+                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                borderWidth: 1,
+                borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E8E4DE',
+              }}
+            >
+              <Ionicons name="pencil-outline" size={16} color={isDark ? '#aaa' : '#555'} />
+              <Text style={{ fontFamily: 'Geist-Bold', fontSize: 14, color: isDark ? '#ccc' : '#444' }}>
+                Let's Practice
+              </Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
