@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { getOrAssignTodayDropForNotif } from '../../db/actions';
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 const STORAGE_KEYS = {
@@ -230,13 +231,37 @@ export default function Settings() {
     loadSettings();
   }, []);
 
-  const scheduleWordNotification = async (time: Date) => {
+  const scheduleWordNotification = async (time: Date, enabled = true) => {
     await Notifications.cancelAllScheduledNotificationsAsync();
-    if (!notifOn) return;
+    if (!enabled) return;
+
+    // Enregistrer les catégories d'actions (boutons dans la notif)
+    await Notifications.setNotificationCategoryAsync('DAILY_WORD', [
+      {
+        identifier: 'GOT_IT',
+        buttonTitle: '✅ Got it',
+        options: { isDestructive: false, isAuthenticationRequired: false },
+      },
+      {
+        identifier: 'LEARN_MORE',
+        buttonTitle: '📖 Learn more',
+        options: { isDestructive: false, isAuthenticationRequired: false, opensAppToForeground: true },
+      },
+    ]);
+
+    // Récupérer le mot du jour pour l'inclure dans la notif
+    const drop = await getOrAssignTodayDropForNotif();
+    const title = drop ? drop.term : 'Your word of the day 📖';
+    const body = drop
+      ? drop.definition
+      : "A new word is waiting for you. Don't break your streak! 🔥";
+
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Your word of the day 📖',
-        body: "A new word is waiting for you. Don't break your streak! 🔥",
+        title,
+        body,
+        categoryIdentifier: 'DAILY_WORD',
+        data: { dropId: drop?.id ?? null },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -273,7 +298,7 @@ export default function Settings() {
     setNotifOn(value);
     await AsyncStorage.setItem(STORAGE_KEYS.notifOn, String(value));
     if (value) {
-      scheduleWordNotification(reminderTime);
+      scheduleWordNotification(reminderTime, true);
     } else {
       await Notifications.cancelAllScheduledNotificationsAsync();
     }
@@ -404,10 +429,10 @@ export default function Settings() {
               value={reminderTime}
               mode="time"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(_, selected) => {
-                setShowPicker(Platform.OS === 'ios');
+              onValueChange={(_event, selected) => {
                 if (selected) handleTimeChange(selected);
               }}
+              onDismiss={() => setShowPicker(false)}
             />
           ) : null}
 

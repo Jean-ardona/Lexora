@@ -2,22 +2,23 @@ import AskAIButton from "@/components/AskAiBtn";
 import StreakCard from "@/components/StreakCard";
 import { WordCard } from '@/components/WordCard';
 import { Ionicons } from "@expo/vector-icons";
+import * as Notifications from 'expo-notifications';
 import { Link, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    Pressable,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import {
-    checkAndUpdateLearningMilestone,
-    checkAndUpdateStreak,
-    getTodayDrop,
+  checkAndUpdateLearningMilestone,
+  checkAndUpdateStreak,
+  getTodayDrop,
 } from '../../db/actions';
 
 export default function Index() {
@@ -45,6 +46,13 @@ export default function Index() {
           // Si c'est un nouveau milestone → on affiche l'overlay
           if (milestoneResult.isNewMilestone) {
             setMilestone(milestoneResult.wordsLearned);
+          }
+
+          // L'utilisateur a ouvert l'app → on vire la notif du jour si elle est
+          // déjà dans le drawer, et on annule les notifs programmées si plus de mots
+          await Notifications.dismissAllNotificationsAsync();
+          if (!todayDrop) {
+            await Notifications.cancelAllScheduledNotificationsAsync();
           }
         } catch (error) {
           console.error("Error fetching home data:", error);
@@ -172,40 +180,63 @@ export default function Index() {
           </View>
 
           {word ? (
-            <WordCard
-              word={word.term}
-              phonetic={word.phonetic ? `/${word.phonetic}/` : undefined}
-              type={word.type ? word.type.slice(0, 3) : undefined}
-              definition={word.definition}
-              examples={[
-                { sentence: word.examples?.[0] || '', highlighted: word.term },
-                { sentence: word.examples?.[1] || '', highlighted: word.term },
-              ]}
-            />
+            <>            
+              <WordCard
+                word={word.term}
+                phonetic={word.phonetic ? `/${word.phonetic}/` : undefined}
+                type={word.type ? word.type.slice(0, 3) : undefined}
+                definition={word.definition}
+                examples={[
+                  { sentence: word.examples?.[0] || '', highlighted: word.term },
+                  { sentence: word.examples?.[1] || '', highlighted: word.term },
+                ]}
+              />
+
+              <AskAIButton onPress={() => console.log('Ask AI pressed!')} />
+
+
+              <Link href="/quiz" asChild>
+                <TouchableOpacity
+                  className="mt-5 flex-row items-center justify-center gap-2 py-4 rounded-2xl"
+                  style={{
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E8E4DE',
+                  }}
+                >
+                  <Ionicons name="pencil-outline" size={16} color={isDark ? '#aaa' : '#555'} />
+                  <Text style={{ fontFamily: 'Geist-Bold', fontSize: 14, color: isDark ? '#ccc' : '#444' }}>
+                    Let's Practice
+                  </Text>
+                </TouchableOpacity>
+              </Link>
+            </>
+
           ) : (
-            <Text className="text-muted-light dark:text-muted-dark text-center py-8">
-              You've learned all available words!
-            </Text>
-          )}
-
-          <AskAIButton onPress={() => console.log('Ask AI pressed!')} />
-
-          {/* ── Let's Practice ── */}
-          <Link href="/quiz" asChild>
-            <TouchableOpacity
-              className="mt-5 flex-row items-center justify-center gap-2 py-4 rounded-2xl"
+            <View
               style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                borderRadius: 24,
+                padding: 32,
+                alignItems: 'center',
                 borderWidth: 1,
                 borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E8E4DE',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
               }}
             >
-              <Ionicons name="pencil-outline" size={16} color={isDark ? '#aaa' : '#555'} />
-              <Text style={{ fontFamily: 'Geist-Bold', fontSize: 14, color: isDark ? '#ccc' : '#444' }}>
-                Let's Practice
+              <Text style={{ fontSize: 48, marginBottom: 16 }}>🎓</Text>
+              <Text
+                style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 26, color: '#E8410A', marginBottom: 8, textAlign: 'center' }}
+              >
+                All caught up!
               </Text>
-            </TouchableOpacity>
-          </Link>
+              <Text
+                className="text-[13px] text-muted-light dark:text-muted-dark text-center leading-6"
+              >
+                You've learned every word in the collection. New words are coming soon — check back later!
+              </Text>
+            </View>
+          )}
+
         </View>
       </ScrollView>
     </View>

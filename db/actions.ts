@@ -205,3 +205,62 @@ export const checkAndUpdateStreak = async (): Promise<{
     .where(eq(userStats.id, 1));
   return { streak: 1, bestStreak: currentBest };
 };
+
+// ─── Notification Actions ─────────────────────────────────────────────────────
+
+/**
+ * Récupère le mot prévu pour aujourd'hui (ou en assigne un nouveau)
+ * sans le marquer comme appris — utilisé pour construire la notification.
+ */
+export const getOrAssignTodayDropForNotif = async (): Promise<{
+  id: number;
+  term: string;
+  definition: string;
+} | null> => {
+  const today = getTodayDateString();
+
+  // Cherche un mot déjà assigné aujourd'hui
+  const existing = await db
+    .select({ id: drops.id, term: drops.term, definition: drops.definition })
+    .from(drops)
+    .where(eq(drops.dropDate, today))
+    .limit(1);
+
+  if (existing.length > 0) return existing[0];
+
+  // Sinon, on en choisit un aléatoirement sans l'apprendre encore
+  const random = await db
+    .select({ id: drops.id, term: drops.term, definition: drops.definition })
+    .from(drops)
+    .where(eq(drops.isLearned, false))
+    .orderBy(sql`RANDOM()`)
+    .limit(1);
+
+  if (random.length === 0) return null;
+
+  // On assigne la date du jour sans marquer isLearned
+  await db
+    .update(drops)
+    .set({ dropDate: today })
+    .where(eq(drops.id, random[0].id));
+
+  return random[0];
+};
+
+/**
+ * Appelé quand l'utilisateur tape "Got it" dans la notification.
+ * Marque le mot du jour comme appris et met à jour le streak,
+ * tout ça sans ouvrir l'app.
+ */
+export const markTodayDropLearnedFromNotif = async (): Promise<void> => {
+  const today = getTodayDateString();
+
+  // Marquer le mot comme appris
+  await db
+    .update(drops)
+    .set({ isLearned: true })
+    .where(eq(drops.dropDate, today));
+
+  // Mettre à jour le streak
+  await checkAndUpdateStreak();
+};
