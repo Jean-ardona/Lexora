@@ -208,27 +208,27 @@ export const checkAndUpdateStreak = async (): Promise<{
 
 // ─── Notification Actions ─────────────────────────────────────────────────────
 
+export const hasUserOpenedAppToday = async (): Promise<boolean> => {
+  const rows = await db.select().from(userStats).where(eq(userStats.id, 1)).limit(1);
+  if (rows.length === 0) return false;
+  return rows[0].lastActiveDate === getTodayDateString();
+};
+
 /**
- * Récupère le mot prévu pour aujourd'hui (ou en assigne un nouveau)
+ * Récupère le mot prévu pour une date (ou en assigne un nouveau)
  * sans le marquer comme appris — utilisé pour construire la notification.
  */
-export const getOrAssignTodayDropForNotif = async (): Promise<{
-  id: number;
-  term: string;
-  definition: string;
-} | null> => {
-  const today = getTodayDateString();
-
-  // Cherche un mot déjà assigné aujourd'hui
+export const getOrAssignDropForDate = async (
+  date: string
+): Promise<{ id: number; term: string; definition: string } | null> => {
   const existing = await db
     .select({ id: drops.id, term: drops.term, definition: drops.definition })
     .from(drops)
-    .where(eq(drops.dropDate, today))
+    .where(eq(drops.dropDate, date))
     .limit(1);
 
   if (existing.length > 0) return existing[0];
 
-  // Sinon, on en choisit un aléatoirement sans l'apprendre encore
   const random = await db
     .select({ id: drops.id, term: drops.term, definition: drops.definition })
     .from(drops)
@@ -238,14 +238,20 @@ export const getOrAssignTodayDropForNotif = async (): Promise<{
 
   if (random.length === 0) return null;
 
-  // On assigne la date du jour sans marquer isLearned
-  await db
-    .update(drops)
-    .set({ dropDate: today })
-    .where(eq(drops.id, random[0].id));
+  await db.update(drops).set({ dropDate: date }).where(eq(drops.id, random[0].id));
 
   return random[0];
 };
+
+/**
+ * Récupère le mot prévu pour aujourd'hui (ou en assigne un nouveau)
+ * sans le marquer comme appris — utilisé pour construire la notification.
+ */
+export const getOrAssignTodayDropForNotif = async (): Promise<{
+  id: number;
+  term: string;
+  definition: string;
+} | null> => getOrAssignDropForDate(getTodayDateString());
 
 /**
  * Appelé quand l'utilisateur tape "Got it" dans la notification.

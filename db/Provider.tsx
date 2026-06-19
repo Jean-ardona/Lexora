@@ -1,6 +1,7 @@
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import { NotificationBootstrap } from '../components/NotificationBootstrap';
 import migrations from '../drizzle/migrations';
 
 import { db } from './client';
@@ -40,6 +41,7 @@ export const DatabaseProvider = ({ children }: { children: React.ReactNode }) =>
 
   return (
     <DatabaseContext.Provider value={db}>
+      <NotificationBootstrap />
       {children}
     </DatabaseContext.Provider>
   );

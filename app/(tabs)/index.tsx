@@ -2,7 +2,6 @@ import AskAIButton from "@/components/AskAiBtn";
 import StreakCard from "@/components/StreakCard";
 import { WordCard } from '@/components/WordCard';
 import { Ionicons } from "@expo/vector-icons";
-import * as Notifications from 'expo-notifications';
 import { Link, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -48,12 +47,7 @@ export default function Index() {
             setMilestone(milestoneResult.wordsLearned);
           }
 
-          // L'utilisateur a ouvert l'app → on vire la notif du jour si elle est
-          // déjà dans le drawer, et on annule les notifs programmées si plus de mots
-          await Notifications.dismissAllNotificationsAsync();
-          if (!todayDrop) {
-            await Notifications.cancelAllScheduledNotificationsAsync();
-          }
+          // La reprogrammation des notifs est gérée globalement par NotificationBootstrap
         } catch (error) {
           console.error("Error fetching home data:", error);
         } finally {

@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
-import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -17,16 +16,17 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { getOrAssignTodayDropForNotif } from '../../db/actions';
+import {
+  scheduleNextDailyNotification,
+  scheduleTestNotification,
+  STORAGE_KEYS,
+} from '../../lib/dailyNotifications';
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
-const STORAGE_KEYS = {
-  notifOn: 'settings_notif_on',
+const SETTINGS_KEYS = {
   streakRemind: 'settings_streak_remind',
-  reminderTime: 'settings_reminder_time', // stocké en ISO string
+  ...STORAGE_KEYS,
 };
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 type ThemeMode = 'light' | 'dark' | 'auto';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -166,36 +166,9 @@ function ThemeSelector({
   );
 }
 
-// ─── Streak Remind Card ───────────────────────────────────────────────────────
-function StreakRemindCard({ time, notifOn }: { time: Date; notifOn: boolean }) {
-  return (
-    <View
-      className="bg-bg-dark dark:bg-white/5 rounded-2xl p-4 flex-row items-center gap-4 mt-4"
-      style={{ opacity: notifOn ? 1 : 0.4 }}
-    >
-      <View className="w-11 h-11 rounded-xl bg-accent items-center justify-center">
-        <Text style={{ fontSize: 20 }}>🔥</Text>
-      </View>
-      <View className="flex-1">
-        <Text className="font-geist-bold text-[14px] text-white mb-1">
-          Don't break your streak!
-        </Text>
-        <View>
-          <Text className="text-[12px] text-white/45 leading-5">
-            <Text>We'll remind you at </Text>
-            <Text className="text-white/75 font-geist-bold">{formatTime(time)}</Text>
-            <Text> every day so you never miss a word.</Text>
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function Settings() {
   const { isDark, setTheme } = useTheme();
-  const router = useRouter();
 
   const [themeMode, setThemeMode] = useState<ThemeMode>('auto');
   const [notifOn, setNotifOn] = useState(true);
@@ -213,7 +186,7 @@ export default function Settings() {
       try {
         const [savedNotif, savedStreak, savedTime] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.notifOn),
-          AsyncStorage.getItem(STORAGE_KEYS.streakRemind),
+          AsyncStorage.getItem(SETTINGS_KEYS.streakRemind),
           AsyncStorage.getItem(STORAGE_KEYS.reminderTime),
         ]);
 
@@ -223,6 +196,10 @@ export default function Settings() {
           const parsed = new Date(savedTime);
           if (!isNaN(parsed.getTime())) setReminderTime(parsed);
         }
+
+        if (savedNotif !== 'false') {
+          await scheduleNextDailyNotification();
+        }
       } catch (e) {
         console.error('Failed to load settings:', e);
       }
@@ -230,46 +207,6 @@ export default function Settings() {
 
     loadSettings();
   }, []);
-
-  const scheduleWordNotification = async (time: Date, enabled = true) => {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    if (!enabled) return;
-
-    // Enregistrer les catégories d'actions (boutons dans la notif)
-    await Notifications.setNotificationCategoryAsync('DAILY_WORD', [
-      {
-        identifier: 'GOT_IT',
-        buttonTitle: '✅ Got it',
-        options: { isDestructive: false, isAuthenticationRequired: false },
-      },
-      {
-        identifier: 'LEARN_MORE',
-        buttonTitle: '📖 Learn more',
-        options: { isDestructive: false, isAuthenticationRequired: false, opensAppToForeground: true },
-      },
-    ]);
-
-    // Récupérer le mot du jour pour l'inclure dans la notif
-    const drop = await getOrAssignTodayDropForNotif();
-    const title = drop ? drop.term : 'Your word of the day 📖';
-    const body = drop
-      ? drop.definition
-      : "A new word is waiting for you. Don't break your streak! 🔥";
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-        categoryIdentifier: 'DAILY_WORD',
-        data: { dropId: drop?.id ?? null },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: time.getHours(),
-        minute: time.getMinutes(),
-      },
-    });
-  };
 
   // ── Theme handler ──
   const handleThemeChange = (mode: ThemeMode) => {
@@ -298,7 +235,7 @@ export default function Settings() {
     setNotifOn(value);
     await AsyncStorage.setItem(STORAGE_KEYS.notifOn, String(value));
     if (value) {
-      scheduleWordNotification(reminderTime, true);
+      await scheduleNextDailyNotification();
     } else {
       await Notifications.cancelAllScheduledNotificationsAsync();
     }
@@ -307,14 +244,16 @@ export default function Settings() {
   // ── Streak remind toggle ──
   const handleStreakRemindToggle = async (value: boolean) => {
     setStreakRemind(value);
-    await AsyncStorage.setItem(STORAGE_KEYS.streakRemind, String(value));
+    await AsyncStorage.setItem(SETTINGS_KEYS.streakRemind, String(value));
   };
 
   // ── Reminder time change ──
   const handleTimeChange = async (selected: Date) => {
     setReminderTime(selected);
     await AsyncStorage.setItem(STORAGE_KEYS.reminderTime, selected.toISOString());
-    scheduleWordNotification(selected);
+    if (notifOn) {
+      await scheduleNextDailyNotification();
+    }
   };
 
   // ── Share ──
@@ -322,6 +261,12 @@ export default function Settings() {
     await Share.share({
       message: "I'm learning new words every day with Wordly! Join me 🚀",
     });
+  };
+
+  // ── Test notification ──
+  const handleTestNotif = async () => {
+    await scheduleTestNotification();
+    Alert.alert('Test sent!', 'Put the app in the background — notification arrives in 5 seconds.');
   };
 
   return (
@@ -408,20 +353,6 @@ export default function Settings() {
               }
             />
 
-            <SettingRow
-              icon="flame-outline"
-              iconBg="#EAFAF3"
-              iconColor="#2D6A4F"
-              title="Streak reminder"
-              subtitle="Alert if you haven't studied today"
-              right={
-                <CustomToggle
-                  value={streakRemind}
-                  onValueChange={handleStreakRemindToggle}
-                />
-              }
-            />
-
           </SettingGroup>
 
           {showPicker ? (
@@ -436,7 +367,27 @@ export default function Settings() {
             />
           ) : null}
 
-          <StreakRemindCard time={reminderTime} notifOn={notifOn} />
+          {/* ── Test notification button (dev only) ── */}
+          <TouchableOpacity
+            onPress={handleTestNotif}
+            style={{
+              marginTop: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              paddingVertical: 13,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(255,255,255,0.10)' : '#E8E4DE',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+            }}
+          >
+            <Ionicons name="flask-outline" size={15} color={isDark ? '#aaa' : '#666'} />
+            <Text style={{ fontFamily: 'Geist-Bold', fontSize: 13, color: isDark ? '#aaa' : '#555' }}>
+              Test notification (5s)
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── About ── */}

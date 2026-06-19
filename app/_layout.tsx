@@ -5,23 +5,50 @@ import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider } from '../context/ThemeContext';
+import { NotificationBootstrap } from '../components/NotificationBootstrap';
 import { DatabaseProvider } from '../db/Provider';
-import { markTodayDropLearnedFromNotif } from '../db/actions';
+import { hasUserOpenedAppToday } from '../db/actions';
+import { handleNotificationResponse } from '../lib/dailyNotifications';
 import '../global.css';
 
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
+  handleNotification: async (notification) => {
+    const data = notification.request.content.data as Record<string, unknown> | undefined;
+    const isDailyWord = data?.type === 'daily_word';
+
+    if (isDailyWord && (await hasUserOpenedAppToday())) {
+      return {
+        shouldShowAlert: false,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+        shouldShowBanner: false,
+        shouldShowList: false,
+      };
+    }
+
+    return {
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    };
+  },
 });
+
+if (Platform.OS === 'android') {
+  Notifications.setNotificationChannelAsync('default', {
+    name: 'Daily Word',
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: 'default',
+    vibrationPattern: [0, 250, 250, 250],
+    enableVibrate: true,
+  });
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,26 +61,35 @@ export default function RootLayout() {
     DMSerifDisplay_400Regular,
   });
 
-  // ── Gérer les réponses aux actions de la notification ──
   useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener(
-      async (response) => {
-        const actionId = response.actionIdentifier;
+    const handleResponse = async (response: Notifications.NotificationResponse) => {
+      const data = response.notification.request.content.data as
+        | Record<string, unknown>
+        | undefined;
+      const result = await handleNotificationResponse(
+        response.actionIdentifier,
+        data,
+        response.notification.request.identifier
+      );
 
-        if (actionId === 'GOT_IT') {
-          // Marquer le mot comme appris + mettre à jour le streak sans ouvrir l'app
-          await markTodayDropLearnedFromNotif();
-        } else if (
-          actionId === 'LEARN_MORE' ||
-          actionId === Notifications.DEFAULT_ACTION_IDENTIFIER
-        ) {
-          // Ouvrir l'app sur la page d'accueil
-          router.replace('/');
-        }
+      if (result === 'open_app') {
+        router.replace('/');
       }
+
+      Notifications.clearLastNotificationResponse();
+    };
+
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) handleResponse(response);
+    });
+
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
+      handleResponse
     );
 
-    return () => subscription.remove();
+    return () => {
+      responseSubscription.remove();
+    };
   }, []);
 
   useEffect(() => {
