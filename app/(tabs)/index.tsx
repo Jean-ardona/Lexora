@@ -1,11 +1,11 @@
 import AskAIButton from "@/components/AskAiBtn";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
 import StreakCard from "@/components/StreakCard";
 import { WordCard } from "@/components/WordCard";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
@@ -66,11 +66,7 @@ export default function Index() {
   );
 
   if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-bg-light dark:bg-bg-dark">
-        <ActivityIndicator size="large" color="#E8410A" />
-      </View>
-    );
+    return <LoadingSpinner />;
   }
 
   return (

@@ -1,9 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { getLearnedWords, getTodayPracticeAttempts } from '../db/actions';
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import { LoadingSpinner } from "../components/LoadingSpinner";
+import { useTheme } from "../context/ThemeContext";
+import { getLearnedWords, getTodayPracticeAttempts } from "../db/actions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type WordEntry = {
@@ -16,16 +17,16 @@ type WordEntry = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(dateStr: string): string {
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toISOString().split('T')[0];
+  const yStr = yesterday.toISOString().split("T")[0];
 
-  if (dateStr === today) return 'Today';
-  if (dateStr === yStr) return 'Yesterday';
+  if (dateStr === today) return "Today";
+  if (dateStr === yStr) return "Yesterday";
 
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 // ─── Section Label ────────────────────────────────────────────────────────────
@@ -45,7 +46,12 @@ function StatCard({ value, label }: { value: number | string; label: string }) {
   return (
     <View className="flex-1 bg-white dark:bg-white/5 border border-border-light dark:border-border-dark rounded-2xl p-3 items-center">
       <Text
-        style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 26, lineHeight: 30, color: '#E8410A' }}
+        style={{
+          fontFamily: "DMSerifDisplay_400Regular",
+          fontSize: 26,
+          lineHeight: 30,
+          color: "#E8410A",
+        }}
       >
         {value}
       </Text>
@@ -60,7 +66,11 @@ function StatCard({ value, label }: { value: number | string; label: string }) {
 function NoticeBanner() {
   return (
     <View className="bg-bg-dark dark:bg-white/5 rounded-2xl px-4 py-3 flex-row items-center gap-3 mb-5">
-      <Ionicons name="information-circle-outline" size={16} color="rgba(255,255,255,0.4)" />
+      <Ionicons
+        name="information-circle-outline"
+        size={16}
+        color="rgba(255,255,255,0.4)"
+      />
       <View className="flex-1">
         <Text className="text-[12px] text-white/55 leading-5">
           <Text>Words you've seen so far — </Text>
@@ -76,30 +86,34 @@ function NoticeBanner() {
 function WordCard({ item, index }: { item: WordEntry; index: number }) {
   const { isDark } = useTheme();
 
-  const accentColor = item.mastered ? '#2D6A4F' : '#A32D2D';
+  const accentColor = item.mastered ? "#2D6A4F" : "#A32D2D";
   const badgeBg = item.mastered
-    ? (isDark ? 'rgba(45,106,79,0.2)' : '#EAFAF3')
-    : (isDark ? 'rgba(163,45,45,0.2)' : '#FCEBEB');
-  const badgeText = item.mastered ? '#2D6A4F' : '#A32D2D';
-  const badgeLabel = item.mastered ? 'Mastered' : 'To review';
+    ? isDark
+      ? "rgba(45,106,79,0.2)"
+      : "#EAFAF3"
+    : isDark
+      ? "rgba(163,45,45,0.2)"
+      : "#FCEBEB";
+  const badgeText = item.mastered ? "#2D6A4F" : "#A32D2D";
+  const badgeLabel = item.mastered ? "Mastered" : "To review";
 
   return (
     <View
       className="bg-white dark:bg-white/5 rounded-2xl mb-3 flex-row items-center overflow-hidden"
       style={{
         borderWidth: 1,
-        borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E8E4DE',
+        borderColor: isDark ? "rgba(255,255,255,0.08)" : "#E8E4DE",
         borderLeftWidth: 3,
         borderLeftColor: accentColor,
       }}
     >
       <Text
         style={{
-          fontFamily: 'DMSerifDisplay_400Regular',
+          fontFamily: "DMSerifDisplay_400Regular",
           fontSize: 18,
-          color: isDark ? 'rgba(255,255,255,0.12)' : '#E8E4DE',
+          color: isDark ? "rgba(255,255,255,0.12)" : "#E8E4DE",
           width: 44,
-          textAlign: 'center',
+          textAlign: "center",
         }}
       >
         {index + 1}
@@ -119,7 +133,7 @@ function WordCard({ item, index }: { item: WordEntry; index: number }) {
           <Ionicons
             name="calendar-outline"
             size={11}
-            color={isDark ? 'rgba(255,255,255,0.3)' : '#9A948C'}
+            color={isDark ? "rgba(255,255,255,0.3)" : "#9A948C"}
           />
           <Text className="text-[10px] text-muted-light dark:text-muted-dark">
             {formatDate(item.dropDate)}
@@ -136,7 +150,7 @@ function WordCard({ item, index }: { item: WordEntry; index: number }) {
           marginRight: 12,
         }}
       >
-        <Text style={{ fontSize: 10, fontWeight: '600', color: badgeText }}>
+        <Text style={{ fontSize: 10, fontWeight: "600", color: badgeText }}>
           {badgeLabel}
         </Text>
       </View>
@@ -175,7 +189,7 @@ function EmptyState() {
     <View className="items-center px-8 pt-16">
       <Text style={{ fontSize: 44, marginBottom: 16 }}>📖</Text>
       <Text
-        style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 26 }}
+        style={{ fontFamily: "DMSerifDisplay_400Regular", fontSize: 26 }}
         className="dark:text-primary-dark text-center mb-2"
       >
         No history yet
@@ -209,34 +223,30 @@ export default function History() {
                 id: String(drop.id),
                 word: drop.term,
                 definition: drop.definition,
-                dropDate: drop.dropDate ?? '',
+                dropDate: drop.dropDate ?? "",
                 mastered: attempts.length >= 2,
               };
-            })
+            }),
           );
 
           setWords(entries);
         } catch (e) {
-          console.error('History load error:', e);
+          console.error("History load error:", e);
         } finally {
           setLoading(false);
         }
       };
       load();
-    }, [])
+    }, []),
   );
 
   if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-bg-light dark:bg-bg-dark">
-        <ActivityIndicator size="large" color="#E8410A" />
-      </View>
-    );
+    return <LoadingSpinner />;
   }
 
   const totalWords = words.length;
-  const mastered = words.filter(w => w.mastered).length;
-  const toReview = words.filter(w => !w.mastered).length;
+  const mastered = words.filter((w) => w.mastered).length;
+  const toReview = words.filter((w) => !w.mastered).length;
 
   return (
     <View className="flex-1 bg-bg-light dark:bg-bg-dark">
@@ -247,7 +257,11 @@ export default function History() {
             Vocabulary
           </Text>
           <Text
-            style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 36, lineHeight: 40 }}
+            style={{
+              fontFamily: "DMSerifDisplay_400Regular",
+              fontSize: 36,
+              lineHeight: 40,
+            }}
             className="dark:text-primary-dark"
           >
             History

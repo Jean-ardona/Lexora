@@ -1,20 +1,25 @@
-import { Ionicons } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import { getTodayDrop, getTodayPracticeAttempts, savePracticeAttempt } from '../../db/actions';
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
+import { useTheme } from "../../context/ThemeContext";
+import {
+  getTodayDrop,
+  getTodayPracticeAttempts,
+  savePracticeAttempt,
+} from "../../db/actions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Drop = {
@@ -53,7 +58,7 @@ function AttemptDots({ used, total }: { used: number; total: number }) {
               width: 10,
               height: 10,
               borderRadius: 5,
-              backgroundColor: i < used ? '#E8410A' : '#E8E4DE',
+              backgroundColor: i < used ? "#E8410A" : "#E8E4DE",
             }}
           />
         ))}
@@ -69,17 +74,20 @@ export default function Practice() {
   const [drop, setDrop] = useState<Drop | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [sentence, setSentence] = useState('');
+  const [sentence, setSentence] = useState("");
   const [attemptsUsed, setAttemptsUsed] = useState(0);
   const [savedAttempts, setSavedAttempts] = useState<SavedAttempt[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [exhausted, setExhausted] = useState(false);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ['50%', '75%'], []);
+  const snapPoints = useMemo(() => ["50%", "75%"], []);
   const inputRef = useRef<TextInput>(null);
 
-  const openSheet = useCallback(() => bottomSheetRef.current?.snapToIndex(0), []);
+  const openSheet = useCallback(
+    () => bottomSheetRef.current?.snapToIndex(0),
+    [],
+  );
   const closeSheet = useCallback(() => bottomSheetRef.current?.close(), []);
 
   // ── Charger le mot du jour + tentatives existantes ──
@@ -102,13 +110,13 @@ export default function Practice() {
           setAttemptsUsed(existing.length);
           if (existing.length >= MAX_ATTEMPTS) setExhausted(true);
         } catch (e) {
-          console.error('Practice load error:', e);
+          console.error("Practice load error:", e);
         } finally {
           setLoading(false);
         }
       };
       load();
-    }, [])
+    }, []),
   );
 
   // ── Soumettre une tentative ──
@@ -118,10 +126,12 @@ export default function Practice() {
 
     // Vérifie que la phrase n'est pas identique à une tentative précédente
     const isDuplicate = savedAttempts.some(
-      (a) => a.sentence.trim().toLowerCase() === sentence.trim().toLowerCase()
+      (a) => a.sentence.trim().toLowerCase() === sentence.trim().toLowerCase(),
     );
     if (isDuplicate) {
-      alert('You already submitted this sentence! Try writing a different one 💡');
+      alert(
+        "You already submitted this sentence! Try writing a different one 💡",
+      );
       return;
     }
 
@@ -137,28 +147,25 @@ export default function Practice() {
         attemptNb: newAttemptNb,
       });
 
-      setSavedAttempts(prev => [...prev, saved as SavedAttempt]);
+      setSavedAttempts((prev) => [...prev, saved as SavedAttempt]);
       setAttemptsUsed(newAttemptNb);
 
       if (newAttemptNb >= MAX_ATTEMPTS) setExhausted(true);
 
       openSheet();
     } catch (e) {
-      console.error('Save attempt error:', e);
+      console.error("Save attempt error:", e);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const canSubmit = !!drop && sentence.trim().length >= 5 && !submitting && !exhausted;
+  const canSubmit =
+    !!drop && sentence.trim().length >= 5 && !submitting && !exhausted;
 
   // ── Loading ──
   if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-bg-light dark:bg-bg-dark">
-        <ActivityIndicator size="large" color="#E8410A" />
-      </View>
-    );
+    return <LoadingSpinner />;
   }
 
   // ── No word available ──
@@ -167,7 +174,7 @@ export default function Practice() {
       <View className="flex-1 justify-center items-center bg-bg-light dark:bg-bg-dark px-8">
         <Text style={{ fontSize: 44, marginBottom: 16 }}>📭</Text>
         <Text
-          style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 26 }}
+          style={{ fontFamily: "DMSerifDisplay_400Regular", fontSize: 26 }}
           className="dark:text-primary-dark text-center mb-2"
         >
           No word today
@@ -187,7 +194,11 @@ export default function Practice() {
           Daily practice
         </Text>
         <Text
-          style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 36, lineHeight: 40 }}
+          style={{
+            fontFamily: "DMSerifDisplay_400Regular",
+            fontSize: 36,
+            lineHeight: 40,
+          }}
           className="dark:text-primary-dark mb-2"
         >
           Practice
@@ -195,7 +206,7 @@ export default function Practice() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
@@ -204,19 +215,25 @@ export default function Practice() {
           keyboardShouldPersistTaps="handled"
         >
           <View className="px-6 pt-6">
-
             {/* ── Word Card ── */}
             <View className="bg-bg-dark dark:bg-white/5 rounded-2xl p-6 mb-5">
               <Text className="text-[10px] text-white/35 uppercase tracking-[2px] mb-2">
                 Word of the day
               </Text>
               <Text
-                style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 44, color: '#fff', lineHeight: 48 }}
+                style={{
+                  fontFamily: "DMSerifDisplay_400Regular",
+                  fontSize: 44,
+                  color: "#fff",
+                  lineHeight: 48,
+                }}
                 className="mb-1"
               >
                 {drop.term}
               </Text>
-              <Text className="text-[11px] text-white/35 mb-3">{drop.type}</Text>
+              <Text className="text-[11px] text-white/35 mb-3">
+                {drop.type}
+              </Text>
               <View className="border-t border-white/10 pt-3">
                 <Text className="text-[14px] text-white/65 leading-6">
                   {drop.definition}
@@ -232,8 +249,8 @@ export default function Practice() {
               <View
                 className="rounded-2xl p-4 mb-4 border"
                 style={{
-                  backgroundColor: isDark ? 'rgba(232,65,10,0.10)' : '#FFF0EB',
-                  borderColor: isDark ? 'rgba(232,65,10,0.25)' : '#FDDDD2',
+                  backgroundColor: isDark ? "rgba(232,65,10,0.10)" : "#FFF0EB",
+                  borderColor: isDark ? "rgba(232,65,10,0.25)" : "#FDDDD2",
                 }}
               >
                 <Text className="text-[13px] text-accent font-geist-bold mb-1">
@@ -250,8 +267,8 @@ export default function Practice() {
               <View
                 className="rounded-2xl p-4 mb-3 border"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
-                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E8E4DE',
+                  backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#fff",
+                  borderColor: isDark ? "rgba(255,255,255,0.08)" : "#E8E4DE",
                 }}
               >
                 <Text className="text-[11px] text-muted-light dark:text-muted-dark uppercase tracking-widest mb-3">
@@ -262,22 +279,24 @@ export default function Practice() {
                   value={sentence}
                   onChangeText={setSentence}
                   placeholder={`Write a sentence using "${drop.term.toLowerCase()}"...`}
-                  placeholderTextColor={isDark ? 'rgba(255,255,255,0.2)' : '#9A948C'}
+                  placeholderTextColor={
+                    isDark ? "rgba(255,255,255,0.2)" : "#9A948C"
+                  }
                   multiline
                   style={{
-                    fontFamily: 'Geist-Regular',
+                    fontFamily: "Geist-Regular",
                     fontSize: 15,
-                    color: isDark ? '#fff' : '#1A1510',
+                    color: isDark ? "#fff" : "#1A1510",
                     minHeight: 90,
                     lineHeight: 24,
-                    textAlignVertical: 'top',
+                    textAlignVertical: "top",
                   }}
                 />
                 <View className="flex-row items-center gap-1 mt-3 pt-3 border-t border-border-light dark:border-border-dark">
                   <Ionicons
                     name="information-circle-outline"
                     size={12}
-                    color={isDark ? 'rgba(255,255,255,0.25)' : '#9A948C'}
+                    color={isDark ? "rgba(255,255,255,0.25)" : "#9A948C"}
                   />
                   <Text className="text-[11px] text-muted-light dark:text-muted-dark flex-1">
                     Show you understand the meaning, not just the definition
@@ -292,16 +311,18 @@ export default function Practice() {
                 onPress={() => setSentence(drop.examples![0])}
                 className="flex-row items-center gap-2 self-start mb-4"
                 style={{
-                  backgroundColor: isDark ? 'rgba(232,65,10,0.12)' : '#FFF0EB',
+                  backgroundColor: isDark ? "rgba(232,65,10,0.12)" : "#FFF0EB",
                   borderWidth: 1,
-                  borderColor: isDark ? 'rgba(232,65,10,0.25)' : '#FDDDD2',
+                  borderColor: isDark ? "rgba(232,65,10,0.25)" : "#FDDDD2",
                   borderRadius: 20,
                   paddingHorizontal: 12,
                   paddingVertical: 6,
                 }}
               >
                 <Ionicons name="bulb-outline" size={14} color="#E8410A" />
-                <Text style={{ fontSize: 12, color: '#993C1D', fontWeight: '600' }}>
+                <Text
+                  style={{ fontSize: 12, color: "#993C1D", fontWeight: "600" }}
+                >
                   See an example sentence
                 </Text>
               </TouchableOpacity>
@@ -319,8 +340,18 @@ export default function Practice() {
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
-                    <Text style={{ color: '#fff', fontSize: 15, fontFamily: 'Geist-Bold' }}>
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={18}
+                      color="#fff"
+                    />
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontSize: 15,
+                        fontFamily: "Geist-Bold",
+                      }}
+                    >
                       Submit sentence
                     </Text>
                   </>
@@ -340,7 +371,6 @@ export default function Practice() {
                 </Text>
               </TouchableOpacity>
             ) : null}
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -352,11 +382,11 @@ export default function Practice() {
         snapPoints={snapPoints}
         enablePanDownToClose
         backgroundStyle={{
-          backgroundColor: isDark ? '#1E1C19' : '#fff',
+          backgroundColor: isDark ? "#1E1C19" : "#fff",
           borderRadius: 24,
         }}
         handleIndicatorStyle={{
-          backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#E8E4DE',
+          backgroundColor: isDark ? "rgba(255,255,255,0.2)" : "#E8E4DE",
           width: 36,
         }}
       >
@@ -370,14 +400,14 @@ export default function Practice() {
             style={{ paddingTop: 8 }}
           >
             <Text
-              style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 24 }}
+              style={{ fontFamily: "DMSerifDisplay_400Regular", fontSize: 24 }}
               className="dark:text-primary-dark mb-1"
             >
               Your sentences
             </Text>
             <Text className="text-[12px] text-muted-light dark:text-muted-dark">
               {savedAttempts.length === MAX_ATTEMPTS
-                ? 'Both attempts submitted — AI feedback coming soon 🚀'
+                ? "Both attempts submitted — AI feedback coming soon 🚀"
                 : `Attempt ${savedAttempts.length} of ${MAX_ATTEMPTS} submitted`}
             </Text>
           </View>
@@ -388,8 +418,10 @@ export default function Practice() {
                 key={attempt.id}
                 className="rounded-2xl p-4 mb-3 border"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FAFAF8',
-                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E8E4DE',
+                  backgroundColor: isDark
+                    ? "rgba(255,255,255,0.04)"
+                    : "#FAFAF8",
+                  borderColor: isDark ? "rgba(255,255,255,0.08)" : "#E8E4DE",
                 }}
               >
                 <Text className="text-[10px] text-muted-light dark:text-muted-dark uppercase tracking-widest mb-2">
@@ -405,17 +437,20 @@ export default function Practice() {
             <View
               className="rounded-2xl p-4 border"
               style={{
-                backgroundColor: isDark ? 'rgba(232,65,10,0.08)' : '#FFF8F6',
-                borderColor: isDark ? 'rgba(232,65,10,0.2)' : '#FDDDD2',
-                borderStyle: 'dashed',
+                backgroundColor: isDark ? "rgba(232,65,10,0.08)" : "#FFF8F6",
+                borderColor: isDark ? "rgba(232,65,10,0.2)" : "#FDDDD2",
+                borderStyle: "dashed",
               }}
             >
               <View className="flex-row items-center gap-2 mb-1">
                 <Ionicons name="sparkles-outline" size={14} color="#E8410A" />
-                <Text className="text-[12px] text-accent font-geist-bold">AI Feedback</Text>
+                <Text className="text-[12px] text-accent font-geist-bold">
+                  AI Feedback
+                </Text>
               </View>
               <Text className="text-[12px] text-muted-light dark:text-muted-dark leading-5">
-                Detailed feedback on your sentences will appear here once AI is enabled.
+                Detailed feedback on your sentences will appear here once AI is
+                enabled.
               </Text>
             </View>
 
@@ -423,7 +458,9 @@ export default function Practice() {
               onPress={closeSheet}
               className="bg-bg-dark dark:bg-white/10 rounded-2xl py-4 items-center mt-4"
             >
-              <Text className="text-white font-geist-bold text-[15px]">Close</Text>
+              <Text className="text-white font-geist-bold text-[15px]">
+                Close
+              </Text>
             </TouchableOpacity>
           </View>
         </BottomSheetScrollView>
