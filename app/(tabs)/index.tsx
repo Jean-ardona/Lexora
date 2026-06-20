@@ -1,6 +1,6 @@
 import AskAIButton from "@/components/AskAiBtn";
 import StreakCard from "@/components/StreakCard";
-import { WordCard } from '@/components/WordCard';
+import { WordCard } from "@/components/WordCard";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -18,18 +18,24 @@ import {
   checkAndUpdateLearningMilestone,
   checkAndUpdateStreak,
   getTodayDrop,
-} from '../../db/actions';
+} from "../../db/actions";
+import { useIsDbReady } from "../../db/Provider";
 
 export default function Index() {
   const { isDark } = useTheme();
+  const isDbReady = useIsDbReady();
   const [word, setWord] = useState<any>(null);
   const [streak, setStreak] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [milestone, setMilestone] = useState<number | null>(null); // nb de mots au milestone
 
   // ── useFocusEffect : se relance à chaque fois qu'on revient sur l'écran ──
+  // isDbReady est en dépendance : le fetch se déclenche aussi quand la DB
+  // devient prête (cas du premier lancement avec l'overlay de chargement).
   useFocusEffect(
     useCallback(() => {
+      if (!isDbReady) return;
+
       const fetchData = async () => {
         try {
           setLoading(true);
@@ -56,7 +62,7 @@ export default function Index() {
       };
 
       fetchData();
-    }, [])
+    }, [isDbReady]),
   );
 
   if (loading) {
@@ -69,7 +75,6 @@ export default function Index() {
 
   return (
     <View className="flex-1 bg-bg-light dark:bg-bg-dark pt-14 px-6">
-
       {/* ── Milestone Overlay ── */}
       <Modal
         visible={milestone !== null}
@@ -78,25 +83,40 @@ export default function Index() {
         onRequestClose={() => setMilestone(null)}
       >
         <View
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: 32 }}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.75)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 32,
+          }}
         >
           <View
             style={{
-              backgroundColor: isDark ? '#1E1C19' : '#fff',
+              backgroundColor: isDark ? "#1E1C19" : "#fff",
               borderRadius: 28,
               padding: 32,
-              alignItems: 'center',
-              width: '100%',
+              alignItems: "center",
+              width: "100%",
             }}
           >
             <Text style={{ fontSize: 64, marginBottom: 12 }}>🎉</Text>
             <Text
-              style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 32, color: '#E8410A', marginBottom: 8 }}
+              style={{
+                fontFamily: "DMSerifDisplay_400Regular",
+                fontSize: 32,
+                color: "#E8410A",
+                marginBottom: 8,
+              }}
             >
               {milestone} words!
             </Text>
             <Text
-              style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 22, marginBottom: 12 }}
+              style={{
+                fontFamily: "DMSerifDisplay_400Regular",
+                fontSize: 22,
+                marginBottom: 12,
+              }}
               className="dark:text-primary-dark"
             >
               New milestone reached!
@@ -105,18 +125,25 @@ export default function Index() {
               className="text-[13px] text-muted-light dark:text-muted-dark text-center leading-6"
               style={{ marginBottom: 28 }}
             >
-              You've learned {milestone} words. Keep the streak going — you're building something real. 🔥
+              You've learned {milestone} words. Keep the streak going — you're
+              building something real. 🔥
             </Text>
             <Pressable
               onPress={() => setMilestone(null)}
               style={{
-                backgroundColor: '#E8410A',
+                backgroundColor: "#E8410A",
                 borderRadius: 16,
                 paddingVertical: 14,
                 paddingHorizontal: 40,
               }}
             >
-              <Text style={{ color: '#fff', fontFamily: 'Geist-Bold', fontSize: 15 }}>
+              <Text
+                style={{
+                  color: "#fff",
+                  fontFamily: "Geist-Bold",
+                  fontSize: 15,
+                }}
+              >
                 Let's keep going!
               </Text>
             </Pressable>
@@ -129,23 +156,37 @@ export default function Index() {
         <View className="flex-row gap-2 items-center justify-center">
           <Ionicons name="flame-outline" size={32} color="#E85D26" />
           <View>
-            <Text className="dark:text-primary-dark tracking-[3px] font-inter text-sm">DAILY</Text>
+            <Text className="dark:text-primary-dark tracking-[3px] font-inter text-sm">
+              DAILY
+            </Text>
             <View className="flex-row -mt-2 ml-[1px]">
-              <Text className="dark:text-primary-dark font-geist-bold text-3xl">DR</Text>
+              <Text className="dark:text-primary-dark font-geist-bold text-3xl">
+                DR
+              </Text>
               <Text className="text-accent font-geist-bold text-3xl">O</Text>
-              <Text className="dark:text-primary-dark font-geist-bold text-3xl">P</Text>
+              <Text className="dark:text-primary-dark font-geist-bold text-3xl">
+                P
+              </Text>
             </View>
           </View>
         </View>
         <View className="flex-row gap-6 items-center">
           <Link href="/history" asChild>
             <TouchableOpacity>
-              <Ionicons name="time-outline" size={26} color={isDark ? "#eee" : "#000"} />
+              <Ionicons
+                name="time-outline"
+                size={26}
+                color={isDark ? "#eee" : "#000"}
+              />
             </TouchableOpacity>
           </Link>
           <Link href="/settings" asChild>
             <TouchableOpacity>
-              <Ionicons name="settings-outline" size={24} color={isDark ? "#eee" : "#000"} />
+              <Ionicons
+                name="settings-outline"
+                size={24}
+                color={isDark ? "#eee" : "#000"}
+              />
             </TouchableOpacity>
           </Link>
         </View>
@@ -167,70 +208,92 @@ export default function Index() {
             <View className="w-8 h-1 bg-accent" />
             <Text
               className="text-sm text-muted-light dark:text-muted-dark uppercase tracking-widest ml-2"
-              style={{ fontFamily: 'serif' }}
+              style={{ fontFamily: "serif" }}
             >
               Word of the day
             </Text>
           </View>
 
           {word ? (
-            <>            
+            <>
               <WordCard
                 word={word.term}
                 phonetic={word.phonetic ? `/${word.phonetic}/` : undefined}
                 type={word.type ? word.type.slice(0, 3) : undefined}
                 definition={word.definition}
                 examples={[
-                  { sentence: word.examples?.[0] || '', highlighted: word.term },
-                  { sentence: word.examples?.[1] || '', highlighted: word.term },
+                  {
+                    sentence: word.examples?.[0] || "",
+                    highlighted: word.term,
+                  },
+                  {
+                    sentence: word.examples?.[1] || "",
+                    highlighted: word.term,
+                  },
                 ]}
               />
 
-              <AskAIButton onPress={() => console.log('Ask AI pressed!')} />
-
+              <AskAIButton onPress={() => console.log("Ask AI pressed!")} />
 
               <Link href="/quiz" asChild>
                 <TouchableOpacity
                   className="mt-5 flex-row items-center justify-center gap-2 py-4 rounded-2xl"
                   style={{
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                    backgroundColor: isDark
+                      ? "rgba(255,255,255,0.06)"
+                      : "rgba(0,0,0,0.04)",
                     borderWidth: 1,
-                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E8E4DE',
+                    borderColor: isDark ? "rgba(255,255,255,0.08)" : "#E8E4DE",
                   }}
                 >
-                  <Ionicons name="pencil-outline" size={16} color={isDark ? '#aaa' : '#555'} />
-                  <Text style={{ fontFamily: 'Geist-Bold', fontSize: 14, color: isDark ? '#ccc' : '#444' }}>
+                  <Ionicons
+                    name="pencil-outline"
+                    size={16}
+                    color={isDark ? "#aaa" : "#555"}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Geist-Bold",
+                      fontSize: 14,
+                      color: isDark ? "#ccc" : "#444",
+                    }}
+                  >
                     Let's Practice
                   </Text>
                 </TouchableOpacity>
               </Link>
             </>
-
           ) : (
             <View
               style={{
                 borderRadius: 24,
                 padding: 32,
-                alignItems: 'center',
+                alignItems: "center",
                 borderWidth: 1,
-                borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E8E4DE',
-                backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                borderColor: isDark ? "rgba(255,255,255,0.08)" : "#E8E4DE",
+                backgroundColor: isDark
+                  ? "rgba(255,255,255,0.03)"
+                  : "rgba(0,0,0,0.02)",
               }}
             >
               <Text style={{ fontSize: 48, marginBottom: 16 }}>🎓</Text>
               <Text
-                style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 26, color: '#E8410A', marginBottom: 8, textAlign: 'center' }}
+                style={{
+                  fontFamily: "DMSerifDisplay_400Regular",
+                  fontSize: 26,
+                  color: "#E8410A",
+                  marginBottom: 8,
+                  textAlign: "center",
+                }}
               >
                 All caught up!
               </Text>
-              <Text
-                className="text-[13px] text-muted-light dark:text-muted-dark text-center leading-6"
-              >
-                You've learned every word in the collection. New words are coming soon — check back later!
+              <Text className="text-[13px] text-muted-light dark:text-muted-dark text-center leading-6">
+                You've learned every word in the collection. New words are
+                coming soon — check back later!
               </Text>
             </View>
           )}
-
         </View>
       </ScrollView>
     </View>

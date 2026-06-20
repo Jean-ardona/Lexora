@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as Notifications from 'expo-notifications';
-import { useEffect, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import * as Notifications from "expo-notifications";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -14,26 +14,26 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
+} from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import {
   scheduleNextDailyNotification,
   scheduleTestNotification,
   STORAGE_KEYS,
-} from '../../lib/dailyNotifications';
+} from "../../lib/dailyNotifications";
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 const SETTINGS_KEYS = {
-  streakRemind: 'settings_streak_remind',
+  streakRemind: "settings_streak_remind",
   ...STORAGE_KEYS,
 };
-type ThemeMode = 'light' | 'dark' | 'auto';
+type ThemeMode = "light" | "dark" | "auto";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatTime(date: Date): string {
   const h = date.getHours();
-  const m = date.getMinutes().toString().padStart(2, '0');
-  const ampm = h >= 12 ? 'PM' : 'AM';
+  const m = date.getMinutes().toString().padStart(2, "0");
+  const ampm = h >= 12 ? "PM" : "AM";
   const hour = h % 12 === 0 ? 12 : h % 12;
   return `${hour}:${m} ${ampm}`;
 }
@@ -94,8 +94,12 @@ function SettingRow({
         <Ionicons name={icon} size={18} color={iconColor} />
       </View>
       <View className="flex-1">
-        <Text className="font-geist-bold text-[14px] dark:text-primary-dark">{title}</Text>
-        <Text className="text-[11px] text-muted-light dark:text-muted-dark mt-0.5">{subtitle}</Text>
+        <Text className="font-geist-bold text-[14px] dark:text-primary-dark">
+          {title}
+        </Text>
+        <Text className="text-[11px] text-muted-light dark:text-muted-dark mt-0.5">
+          {subtitle}
+        </Text>
       </View>
       {right}
     </Row>
@@ -103,12 +107,18 @@ function SettingRow({
 }
 
 // ─── Custom Toggle ────────────────────────────────────────────────────────────
-function CustomToggle({ value, onValueChange }: { value: boolean; onValueChange: (v: boolean) => void }) {
+function CustomToggle({
+  value,
+  onValueChange,
+}: {
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+}) {
   return (
     <Switch
       value={value}
       onValueChange={onValueChange}
-      trackColor={{ false: '#E8E4DE', true: '#E8410A' }}
+      trackColor={{ false: "#E8E4DE", true: "#E8410A" }}
       thumbColor="#fff"
       ios_backgroundColor="#E8E4DE"
     />
@@ -126,9 +136,9 @@ function ThemeSelector({
   isDark: boolean;
 }) {
   const options: { key: ThemeMode; label: string }[] = [
-    { key: 'light', label: 'Light' },
-    { key: 'dark', label: 'Dark' },
-    { key: 'auto', label: 'Auto' },
+    { key: "light", label: "Light" },
+    { key: "dark", label: "Dark" },
+    { key: "auto", label: "Auto" },
   ];
 
   return (
@@ -145,16 +155,18 @@ function ThemeSelector({
               borderRadius: 8,
               borderWidth: 1.5,
               borderColor: active
-                ? '#1A1510'
-                : isDark ? 'rgba(255,255,255,0.12)' : '#E8E4DE',
-              backgroundColor: active ? '#1A1510' : 'transparent',
+                ? "#1A1510"
+                : isDark
+                  ? "rgba(255,255,255,0.12)"
+                  : "#E8E4DE",
+              backgroundColor: active ? "#1A1510" : "transparent",
             }}
           >
             <Text
               style={{
                 fontSize: 11,
-                fontWeight: '600',
-                color: active ? '#fff' : isDark ? '#666' : '#9A948C',
+                fontWeight: "600",
+                color: active ? "#fff" : isDark ? "#666" : "#9A948C",
               }}
             >
               {opt.label}
@@ -170,9 +182,8 @@ function ThemeSelector({
 export default function Settings() {
   const { isDark, setTheme } = useTheme();
 
-  const [themeMode, setThemeMode] = useState<ThemeMode>('auto');
+  const [themeMode, setThemeMode] = useState<ThemeMode>("auto");
   const [notifOn, setNotifOn] = useState(true);
-  const [streakRemind, setStreakRemind] = useState(true);
   const [reminderTime, setReminderTime] = useState(() => {
     const d = new Date();
     d.setHours(8, 0, 0, 0);
@@ -190,18 +201,17 @@ export default function Settings() {
           AsyncStorage.getItem(STORAGE_KEYS.reminderTime),
         ]);
 
-        if (savedNotif !== null) setNotifOn(savedNotif === 'true');
-        if (savedStreak !== null) setStreakRemind(savedStreak === 'true');
+        if (savedNotif !== null) setNotifOn(savedNotif === "true");
         if (savedTime !== null) {
           const parsed = new Date(savedTime);
           if (!isNaN(parsed.getTime())) setReminderTime(parsed);
         }
 
-        if (savedNotif !== 'false') {
+        if (savedNotif !== "false") {
           await scheduleNextDailyNotification();
         }
       } catch (e) {
-        console.error('Failed to load settings:', e);
+        console.error("Failed to load settings:", e);
       }
     };
 
@@ -211,23 +221,23 @@ export default function Settings() {
   // ── Theme handler ──
   const handleThemeChange = (mode: ThemeMode) => {
     setThemeMode(mode);
-    if (mode === 'light') setTheme('light');
-    else if (mode === 'dark') setTheme('dark');
-    else setTheme('system');
+    if (mode === "light") setTheme("light");
+    else if (mode === "dark") setTheme("dark");
+    else setTheme("system");
   };
 
   // ── Notification toggle ──
   const handleNotifToggle = async (value: boolean) => {
     if (value) {
       const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== 'granted') {
+      if (status !== "granted") {
         Alert.alert(
-          'Permission required',
-          'Please enable notifications in your device settings.',
+          "Permission required",
+          "Please enable notifications in your device settings.",
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open settings', onPress: () => Linking.openSettings() },
-          ]
+            { text: "Cancel", style: "cancel" },
+            { text: "Open settings", onPress: () => Linking.openSettings() },
+          ],
         );
         return;
       }
@@ -241,16 +251,13 @@ export default function Settings() {
     }
   };
 
-  // ── Streak remind toggle ──
-  const handleStreakRemindToggle = async (value: boolean) => {
-    setStreakRemind(value);
-    await AsyncStorage.setItem(SETTINGS_KEYS.streakRemind, String(value));
-  };
-
   // ── Reminder time change ──
   const handleTimeChange = async (selected: Date) => {
     setReminderTime(selected);
-    await AsyncStorage.setItem(STORAGE_KEYS.reminderTime, selected.toISOString());
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.reminderTime,
+      selected.toISOString(),
+    );
     if (notifOn) {
       await scheduleNextDailyNotification();
     }
@@ -266,7 +273,10 @@ export default function Settings() {
   // ── Test notification ──
   const handleTestNotif = async () => {
     await scheduleTestNotification();
-    Alert.alert('Test sent!', 'Put the app in the background — notification arrives in 5 seconds.');
+    Alert.alert(
+      "Test sent!",
+      "Put the app in the background — notification arrives in 5 seconds.",
+    );
   };
 
   return (
@@ -277,7 +287,11 @@ export default function Settings() {
           Preferences
         </Text>
         <Text
-          style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 36, lineHeight: 40 }}
+          style={{
+            fontFamily: "DMSerifDisplay_400Regular",
+            fontSize: 36,
+            lineHeight: 40,
+          }}
           className="dark:text-primary-dark"
         >
           Settings
@@ -294,8 +308,8 @@ export default function Settings() {
           <SettingGroup>
             <SettingRow
               icon="moon-outline"
-              iconBg={isDark ? 'rgba(255,255,255,0.08)' : 'rgba(26,21,16,0.08)'}
-              iconColor={isDark ? '#fff' : '#1A1510'}
+              iconBg={isDark ? "rgba(255,255,255,0.08)" : "rgba(26,21,16,0.08)"}
+              iconColor={isDark ? "#fff" : "#1A1510"}
               title="Theme"
               subtitle="Choose your preferred look"
               right={
@@ -313,7 +327,6 @@ export default function Settings() {
         <View className="px-6 pt-6">
           <SectionLabel title="Notifications" />
           <SettingGroup>
-
             <SettingRow
               icon="notifications-outline"
               iconBg="rgba(232,65,10,0.10)"
@@ -321,7 +334,10 @@ export default function Settings() {
               title="Daily word"
               subtitle="Receive a word every day"
               right={
-                <CustomToggle value={notifOn} onValueChange={handleNotifToggle} />
+                <CustomToggle
+                  value={notifOn}
+                  onValueChange={handleNotifToggle}
+                />
               }
             />
 
@@ -332,14 +348,14 @@ export default function Settings() {
               title="Reminder time"
               subtitle="When to receive your daily word"
               dimmed={!notifOn}
-              onPress={notifOn ? () => setShowPicker(true) : undefined}
+              onPress={notifOn ? () => setShowPicker((v) => !v) : undefined}
               right={
                 <View className="flex-row items-center gap-1">
                   <Text
                     style={{
-                      fontFamily: 'DMSerifDisplay_400Regular',
+                      fontFamily: "DMSerifDisplay_400Regular",
                       fontSize: 18,
-                      color: '#E8410A',
+                      color: "#E8410A",
                     }}
                   >
                     {formatTime(reminderTime)}
@@ -347,21 +363,21 @@ export default function Settings() {
                   <Ionicons
                     name="chevron-forward"
                     size={14}
-                    color={isDark ? '#555' : '#9A948C'}
+                    color={isDark ? "#555" : "#9A948C"}
                   />
                 </View>
               }
             />
-
           </SettingGroup>
 
           {showPicker ? (
             <DateTimePicker
               value={reminderTime}
               mode="time"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onValueChange={(_event, selected) => {
-                if (selected) handleTimeChange(selected);
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onValueChange={(_event, date) => {
+                if (Platform.OS === "android") setShowPicker(false);
+                handleTimeChange(date);
               }}
               onDismiss={() => setShowPicker(false)}
             />
@@ -372,19 +388,31 @@ export default function Settings() {
             onPress={handleTestNotif}
             style={{
               marginTop: 12,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
               gap: 8,
               paddingVertical: 13,
               borderRadius: 16,
               borderWidth: 1,
-              borderColor: isDark ? 'rgba(255,255,255,0.10)' : '#E8E4DE',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+              borderColor: isDark ? "rgba(255,255,255,0.10)" : "#E8E4DE",
+              backgroundColor: isDark
+                ? "rgba(255,255,255,0.04)"
+                : "rgba(0,0,0,0.03)",
             }}
           >
-            <Ionicons name="flask-outline" size={15} color={isDark ? '#aaa' : '#666'} />
-            <Text style={{ fontFamily: 'Geist-Bold', fontSize: 13, color: isDark ? '#aaa' : '#555' }}>
+            <Ionicons
+              name="flask-outline"
+              size={15}
+              color={isDark ? "#aaa" : "#666"}
+            />
+            <Text
+              style={{
+                fontFamily: "Geist-Bold",
+                fontSize: 13,
+                color: isDark ? "#aaa" : "#555",
+              }}
+            >
               Test notification (5s)
             </Text>
           </TouchableOpacity>
@@ -394,19 +422,18 @@ export default function Settings() {
         <View className="px-6 pt-6">
           <SectionLabel title="About" />
           <SettingGroup>
-
             <SettingRow
               icon="star-outline"
               iconBg="#EEEDFE"
               iconColor="#534AB7"
               title="Rate the app"
               subtitle="Enjoying it? Leave a review!"
-              onPress={() => Linking.openURL('https://apps.apple.com')}
+              onPress={() => Linking.openURL("https://apps.apple.com")}
               right={
                 <Ionicons
                   name="chevron-forward"
                   size={16}
-                  color={isDark ? '#555' : '#9A948C'}
+                  color={isDark ? "#555" : "#9A948C"}
                 />
               }
             />
@@ -422,18 +449,17 @@ export default function Settings() {
                 <Ionicons
                   name="chevron-forward"
                   size={16}
-                  color={isDark ? '#555' : '#9A948C'}
+                  color={isDark ? "#555" : "#9A948C"}
                 />
               }
             />
-
           </SettingGroup>
         </View>
 
         {/* ── App info ── */}
         <View className="items-center pt-8">
           <Text
-            style={{ fontFamily: 'DMSerifDisplay_400Regular', fontSize: 20 }}
+            style={{ fontFamily: "DMSerifDisplay_400Regular", fontSize: 20 }}
             className="dark:text-primary-dark mb-1"
           >
             Wordly
@@ -442,7 +468,6 @@ export default function Settings() {
             Version 1.0.0
           </Text>
         </View>
-
       </ScrollView>
     </View>
   );

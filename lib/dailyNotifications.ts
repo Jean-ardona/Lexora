@@ -1,22 +1,22 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
-import * as TaskManager from 'expo-task-manager';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
+import * as TaskManager from "expo-task-manager";
 import {
   getOrAssignDropForDate,
   getOrAssignTodayDropForNotif,
   hasUserOpenedAppToday,
   markTodayDropLearnedFromNotif,
-} from '../db/actions';
+} from "../db/actions";
 
 export const STORAGE_KEYS = {
-  notifOn: 'settings_notif_on',
-  reminderTime: 'settings_reminder_time',
-  handledDate: 'daily_notif_handled_date',
+  notifOn: "settings_notif_on",
+  reminderTime: "settings_reminder_time",
+  handledDate: "daily_notif_handled_date",
 } as const;
 
-export const BACKGROUND_NOTIFICATION_TASK = 'daily-word-background-task';
+export const BACKGROUND_NOTIFICATION_TASK = "daily-word-background-task";
 
-const dateToString = (date: Date) => date.toISOString().split('T')[0];
+const dateToString = (date: Date) => date.toISOString().split("T")[0];
 
 export async function getReminderTime(): Promise<Date> {
   const saved = await AsyncStorage.getItem(STORAGE_KEYS.reminderTime);
@@ -31,7 +31,7 @@ export async function getReminderTime(): Promise<Date> {
 
 export async function isNotificationsEnabled(): Promise<boolean> {
   const saved = await AsyncStorage.getItem(STORAGE_KEYS.notifOn);
-  return saved !== 'false';
+  return saved !== "false";
 }
 
 function computeNextFireDate(reminderTime: Date, skipToday: boolean): Date {
@@ -48,15 +48,15 @@ function computeNextFireDate(reminderTime: Date, skipToday: boolean): Date {
 }
 
 export const NOTIFICATION_ACTIONS = {
-  GOT_IT: 'GOT_IT',
-  LEARN_MORE: 'LEARN_MORE',
+  GOT_IT: "GOT_IT",
+  LEARN_MORE: "LEARN_MORE",
 } as const;
 
 async function ensureNotificationCategory() {
-  await Notifications.setNotificationCategoryAsync('DAILY_WORD', [
+  await Notifications.setNotificationCategoryAsync("DAILY_WORD", [
     {
       identifier: NOTIFICATION_ACTIONS.GOT_IT,
-      buttonTitle: '✅ Got it',
+      buttonTitle: "✅ Got it",
       options: {
         isDestructive: false,
         isAuthenticationRequired: false,
@@ -65,7 +65,7 @@ async function ensureNotificationCategory() {
     },
     {
       identifier: NOTIFICATION_ACTIONS.LEARN_MORE,
-      buttonTitle: '📖 Learn more',
+      buttonTitle: "📖 Learn more",
       options: {
         isDestructive: false,
         isAuthenticationRequired: false,
@@ -100,7 +100,7 @@ export async function scheduleNextDailyNotification(): Promise<void> {
   if (!enabled) return;
 
   const { status } = await Notifications.getPermissionsAsync();
-  if (status !== 'granted') return;
+  if (status !== "granted") return;
 
   const reminderTime = await getReminderTime();
   const openedToday = await hasUserOpenedAppToday();
@@ -116,14 +116,14 @@ export async function scheduleNextDailyNotification(): Promise<void> {
     content: {
       title: drop.term,
       body: drop.definition,
-      categoryIdentifier: 'DAILY_WORD',
-      data: { type: 'daily_word', dropId: drop.id, fireDate: fireDateStr },
+      categoryIdentifier: "DAILY_WORD",
+      data: { type: "daily_word", dropId: drop.id, fireDate: fireDateStr },
       sound: true,
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: fireDate,
-      channelId: 'default',
+      channelId: "default",
     },
   });
 }
@@ -136,33 +136,34 @@ async function dismissNotification(notificationId?: string) {
       await Notifications.dismissAllNotificationsAsync();
     }
   } catch (error) {
-    console.warn('Failed to dismiss notification:', error);
+    console.warn("Failed to dismiss notification:", error);
   }
 }
 
 export async function handleNotificationResponse(
   actionId: string,
   data: Record<string, unknown> | undefined,
-  notificationId?: string
-): Promise<'got_it' | 'open_app' | 'ignored'> {
+  notificationId?: string,
+): Promise<"got_it" | "open_app" | "ignored"> {
   if (actionId === NOTIFICATION_ACTIONS.GOT_IT) {
+    // On ferme la notification en premier → feedback immédiat pour l'utilisateur
+    await dismissNotification(notificationId);
     if (isDailyWordNotification(data)) {
       await handleGotItFromNotification();
     }
-    await dismissNotification(notificationId);
-    return 'got_it';
+    return "got_it";
   }
 
-  if (!isDailyWordNotification(data)) return 'ignored';
+  if (!isDailyWordNotification(data)) return "ignored";
 
   if (
     actionId === NOTIFICATION_ACTIONS.LEARN_MORE ||
     actionId === Notifications.DEFAULT_ACTION_IDENTIFIER
   ) {
-    return 'open_app';
+    return "open_app";
   }
 
-  return 'ignored';
+  return "ignored";
 }
 
 export async function onAppOpenedForNotifications(): Promise<void> {
@@ -171,42 +172,45 @@ export async function onAppOpenedForNotifications(): Promise<void> {
 }
 
 function isDailyWordNotification(data: Record<string, unknown> | undefined) {
-  return data?.type === 'daily_word';
+  return data?.type === "daily_word";
 }
 
-TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async ({ data, error }) => {
-  if (error) {
-    console.error('Background notification task error:', error);
-    return;
-  }
+TaskManager.defineTask(
+  BACKGROUND_NOTIFICATION_TASK,
+  async ({ data, error }) => {
+    if (error) {
+      console.error("Background notification task error:", error);
+      return;
+    }
 
-  const payload = data as
-    | {
-        actionIdentifier?: string;
-        notification?: Notifications.Notification;
-      }
-    | undefined;
-  if (!payload) return;
+    const payload = data as
+      | {
+          actionIdentifier?: string;
+          notification?: Notifications.Notification;
+        }
+      | undefined;
+    if (!payload) return;
 
-  const notificationData = payload.notification?.request.content.data as
-    | Record<string, unknown>
-    | undefined;
+    const notificationData = payload.notification?.request.content.data as
+      | Record<string, unknown>
+      | undefined;
 
-  if ('actionIdentifier' in payload && payload.actionIdentifier) {
-    const notificationId = payload.notification?.request.identifier;
-    await handleNotificationResponse(
-      payload.actionIdentifier,
-      notificationData,
-      notificationId
-    );
-    return;
-  }
+    if ("actionIdentifier" in payload && payload.actionIdentifier) {
+      const notificationId = payload.notification?.request.identifier;
+      await handleNotificationResponse(
+        payload.actionIdentifier,
+        notificationData,
+        notificationId,
+      );
+      return;
+    }
 
-  // Réception en arrière-plan : on affiche seulement la notif, pas de marquage auto
-});
+    // Réception en arrière-plan : on affiche seulement la notif, pas de marquage auto
+  },
+);
 
 Notifications.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK).catch((error) => {
-  console.warn('Background notification task registration failed:', error);
+  console.warn("Background notification task registration failed:", error);
 });
 
 // Les réponses aux actions sont gérées dans app/_layout.tsx (navigation incluse).
@@ -217,16 +221,16 @@ export async function scheduleTestNotification(): Promise<void> {
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: drop ? drop.term : 'Your word of the day 📖',
-      body: drop ? drop.definition : 'A new word is waiting for you!',
-      categoryIdentifier: 'DAILY_WORD',
-      data: { type: 'daily_word_test', dropId: drop?.id ?? null },
+      title: drop ? drop.term : "Your word of the day 📖",
+      body: drop ? drop.definition : "A new word is waiting for you!",
+      categoryIdentifier: "DAILY_WORD",
+      data: { type: "daily_word_test", dropId: drop?.id ?? null },
       sound: true,
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds: 5,
-      channelId: 'default',
+      channelId: "default",
     },
   });
 }
