@@ -21,6 +21,7 @@ import {
   scheduleTestNotification,
   STORAGE_KEYS,
 } from "../../lib/dailyNotifications";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 const SETTINGS_KEYS = {
@@ -182,6 +183,7 @@ function ThemeSelector({
 export default function Settings() {
   const { isDark, setTheme } = useTheme();
 
+  const [loading, setLoading] = useState(true);
   const [themeMode, setThemeMode] = useState<ThemeMode>("auto");
   const [notifOn, setNotifOn] = useState(true);
   const [reminderTime, setReminderTime] = useState(() => {
@@ -212,11 +214,15 @@ export default function Settings() {
         }
       } catch (e) {
         console.error("Failed to load settings:", e);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadSettings();
   }, []);
+
+  if (loading) return <LoadingSpinner />;
 
   // ── Theme handler ──
   const handleThemeChange = (mode: ThemeMode) => {
