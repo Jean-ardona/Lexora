@@ -83,6 +83,7 @@ export default function Practice() {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ["50%", "75%"], []);
   const inputRef = useRef<TextInput>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const openSheet = useCallback(
     () => bottomSheetRef.current?.snapToIndex(0),
@@ -208,11 +209,14 @@ export default function Practice() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
         <ScrollView
+          ref={scrollRef}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
         >
           <View className="px-6 pt-6">
             {/* ── Word Card ── */}
@@ -283,6 +287,14 @@ export default function Practice() {
                     isDark ? "rgba(255,255,255,0.2)" : "#9A948C"
                   }
                   multiline
+                  onFocus={() => {
+                    setTimeout(() => {
+                      scrollRef.current?.scrollToEnd({ animated: true });
+                    }, 100);
+                  }}
+                  onBlur={() => {
+                    scrollRef.current?.scrollTo({ y: 0, animated: true });
+                  }}
                   style={{
                     fontFamily: "Geist-Regular",
                     fontSize: 15,
