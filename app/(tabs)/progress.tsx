@@ -193,7 +193,7 @@ function StatCard({
           size={13}
           color={isDark ? "rgba(255,255,255,0.35)" : "#9A948C"}
         />
-        <Text className="text-[11px] text-muted-light dark:text-muted-dark">
+        <Text className="text-[11px] text-secondary-light dark:text-secondary-dark">
           {label}
         </Text>
       </View>

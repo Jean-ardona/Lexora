@@ -16,6 +16,12 @@ export const STORAGE_KEYS = {
 
 export const BACKGROUND_NOTIFICATION_TASK = "daily-word-background-task";
 
+// Nombre de jours schedulés en avance — buffer si l'app n'est pas ouverte
+const DAYS_AHEAD = 3;
+
+// Verrou pour éviter les appels concurrents (source de doublons)
+let schedulingInProgress = false;
+
 const dateToString = (date: Date) => date.toISOString().split("T")[0];
 
 export async function getReminderTime(): Promise<Date> {
@@ -94,47 +100,60 @@ export async function handleGotItFromNotification(): Promise<void> {
 }
 
 export async function scheduleNextDailyNotification(): Promise<void> {
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  // Verrou : si un scheduling est déjà en cours, on ignore cet appel
+  if (schedulingInProgress) return;
+  schedulingInProgress = true;
 
-  const enabled = await isNotificationsEnabled();
-  if (!enabled) return;
+  try {
+    await Notifications.cancelAllScheduledNotificationsAsync();
 
-  const { status } = await Notifications.getPermissionsAsync();
-  if (status !== "granted") return;
+    const enabled = await isNotificationsEnabled();
+    if (!enabled) return;
 
-  const reminderTime = await getReminderTime();
-  const openedToday = await hasUserOpenedAppToday();
-  const fireDate = computeNextFireDate(reminderTime, openedToday);
-  const fireDateStr = dateToString(fireDate);
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted") return;
 
-  const drop = await getOrAssignDropForDate(fireDateStr);
-  if (!drop) return;
+    const reminderTime = await getReminderTime();
+    const openedToday = await hasUserOpenedAppToday();
+    const baseFireDate = computeNextFireDate(reminderTime, openedToday);
 
-  await ensureNotificationCategory();
+    await ensureNotificationCategory();
 
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: drop.term,
-      body: drop.definition,
-      categoryIdentifier: "DAILY_WORD",
-      data: { type: "daily_word", dropId: drop.id, fireDate: fireDateStr },
-      sound: true,
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: fireDate,
-      channelId: "default",
-    },
-  });
+    // On schedule DAYS_AHEAD jours d'affilée comme buffer
+    // → l'utilisateur reçoit des notifs même sans ouvrir l'app
+    for (let i = 0; i < DAYS_AHEAD; i++) {
+      const fireDate = new Date(baseFireDate);
+      fireDate.setDate(fireDate.getDate() + i);
+      const fireDateStr = dateToString(fireDate);
+
+      const drop = await getOrAssignDropForDate(fireDateStr);
+      if (!drop) break; // Plus de mots disponibles
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: drop.term,
+          body: drop.definition,
+          categoryIdentifier: "DAILY_WORD",
+          data: { type: "daily_word", dropId: drop.id, fireDate: fireDateStr },
+          sound: true,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: fireDate,
+          channelId: "default",
+        },
+      });
+    }
+  } finally {
+    schedulingInProgress = false;
+  }
 }
 
-async function dismissNotification(notificationId?: string) {
+async function dismissNotification(_notificationId?: string) {
   try {
-    if (notificationId) {
-      await Notifications.dismissNotificationAsync(notificationId);
-    } else {
-      await Notifications.dismissAllNotificationsAsync();
-    }
+    // dismissAllNotificationsAsync est plus fiable que dismissNotificationAsync(id)
+    // sur Android pour les notifications déjà interagies
+    await Notifications.dismissAllNotificationsAsync();
   } catch (error) {
     console.warn("Failed to dismiss notification:", error);
   }
@@ -192,8 +211,7 @@ TaskManager.defineTask(
     if (!payload) return;
 
     const notificationData = payload.notification?.request.content.data as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
 
     if ("actionIdentifier" in payload && payload.actionIdentifier) {
       const notificationId = payload.notification?.request.identifier;

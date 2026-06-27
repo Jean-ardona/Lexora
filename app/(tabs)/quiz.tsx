@@ -47,7 +47,7 @@ const MAX_ATTEMPTS = 2;
 function AttemptDots({ used, total }: { used: number; total: number }) {
   return (
     <View className="flex-row items-center justify-between mb-4">
-      <Text className="text-[12px] text-muted-light dark:text-muted-dark">
+      <Text className="text-[12px] text-secondary-light dark:text-secondary-dark">
         Attempts remaining
       </Text>
       <View className="flex-row gap-1.5">
@@ -178,10 +178,10 @@ export default function Practice() {
           style={{ fontFamily: "DMSerifDisplay_400Regular", fontSize: 26 }}
           className="dark:text-primary-dark text-center mb-2"
         >
-          No word today
+          Oups...
         </Text>
         <Text className="text-[13px] text-muted-light dark:text-muted-dark text-center leading-6">
-          Come back tomorrow for a new word to practice.
+          Looks like we didn't find any word !
         </Text>
       </View>
     );
@@ -192,7 +192,7 @@ export default function Practice() {
       {/* ── Header ── */}
       <View className="px-6 pt-14 pb-2 border-b border-border-light dark:border-border-dark">
         <Text className="text-[11px] text-muted-light dark:text-muted-dark tracking-[3px] uppercase">
-          Daily practice
+          Daily
         </Text>
         <Text
           style={{
@@ -230,6 +230,7 @@ export default function Practice() {
                   fontSize: 44,
                   color: "#fff",
                   lineHeight: 48,
+                  textTransform: "capitalize",
                 }}
                 className="mb-1"
               >
@@ -275,7 +276,7 @@ export default function Practice() {
                   borderColor: isDark ? "rgba(255,255,255,0.08)" : "#E8E4DE",
                 }}
               >
-                <Text className="text-[11px] text-muted-light dark:text-muted-dark uppercase tracking-widest mb-3">
+                <Text className="text-[11px] text-secondary-light dark:text-secondary-dark uppercase tracking-widest mb-3">
                   Your sentence
                 </Text>
                 <TextInput

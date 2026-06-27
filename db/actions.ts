@@ -1,8 +1,8 @@
-import { count, desc, eq, sql } from 'drizzle-orm';
-import { db } from './client';
-import { drops, practiceAttempts, userStats } from './schema';
+import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
+import { db } from "./client";
+import { drops, practiceAttempts, userStats } from "./schema";
 
-const getTodayDateString = () => new Date().toISOString().split('T')[0];
+const getTodayDateString = () => new Date().toISOString().split("T")[0];
 
 // ─── Word of the day ──────────────────────────────────────────────────────────
 
@@ -27,7 +27,7 @@ export const getTodayDrop = async () => {
   const randomDropList = await db
     .select()
     .from(drops)
-    .where(eq(drops.isLearned, false))
+    .where(and(eq(drops.isLearned, false), isNull(drops.dropDate)))
     .orderBy(sql`RANDOM()`)
     .limit(1);
 
@@ -59,7 +59,7 @@ export const getTodayPracticeAttempts = async (dropId: number) => {
     .select()
     .from(practiceAttempts)
     .where(
-      sql`${practiceAttempts.dropId} = ${dropId} AND ${practiceAttempts.practiceDate} = ${today}`
+      sql`${practiceAttempts.dropId} = ${dropId} AND ${practiceAttempts.practiceDate} = ${today}`,
     )
     .orderBy(practiceAttempts.attemptNb);
 };
@@ -96,9 +96,7 @@ export const savePracticeAttempt = async ({
  * Utilisé dans la page Progress pour la stat "Practices done".
  */
 export const getTotalPracticesCount = async (): Promise<number> => {
-  const result = await db
-    .select({ total: count() })
-    .from(practiceAttempts);
+  const result = await db.select({ total: count() }).from(practiceAttempts);
   return result[0]?.total ?? 0;
 };
 
@@ -109,7 +107,11 @@ export const getTotalPracticesCount = async (): Promise<number> => {
  * Basé sur firstActiveDate stocké dans userStats.
  */
 export const getDaysActive = async (): Promise<number> => {
-  const rows = await db.select().from(userStats).where(eq(userStats.id, 1)).limit(1);
+  const rows = await db
+    .select()
+    .from(userStats)
+    .where(eq(userStats.id, 1))
+    .limit(1);
   if (rows.length === 0 || !rows[0].firstActiveDate) return 1;
 
   const first = new Date(rows[0].firstActiveDate);
@@ -133,10 +135,16 @@ export const checkAndUpdateLearningMilestone = async (): Promise<{
   const learnedWords = await getLearnedWords();
   const wordsLearned = learnedWords.length;
 
-  const stats = await db.select().from(userStats).where(eq(userStats.id, 1)).limit(1);
-  const lastMilestoneShown = stats.length > 0 ? stats[0].lastMilestoneShown || 0 : 0;
+  const stats = await db
+    .select()
+    .from(userStats)
+    .where(eq(userStats.id, 1))
+    .limit(1);
+  const lastMilestoneShown =
+    stats.length > 0 ? stats[0].lastMilestoneShown || 0 : 0;
 
-  const isNewMilestone = isLearningMilestone(wordsLearned) && wordsLearned > lastMilestoneShown;
+  const isNewMilestone =
+    isLearningMilestone(wordsLearned) && wordsLearned > lastMilestoneShown;
 
   if (isNewMilestone) {
     await db
@@ -153,7 +161,7 @@ export const checkAndUpdateLearningMilestone = async (): Promise<{
 const getYesterdayString = () => {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  return yesterday.toISOString().split('T')[0];
+  return yesterday.toISOString().split("T")[0];
 };
 
 export const checkAndUpdateStreak = async (): Promise<{
@@ -163,7 +171,11 @@ export const checkAndUpdateStreak = async (): Promise<{
   const today = getTodayDateString();
   const yesterday = getYesterdayString();
 
-  const rows = await db.select().from(userStats).where(eq(userStats.id, 1)).limit(1);
+  const rows = await db
+    .select()
+    .from(userStats)
+    .where(eq(userStats.id, 1))
+    .limit(1);
 
   // Première ouverture
   if (rows.length === 0) {
@@ -209,7 +221,11 @@ export const checkAndUpdateStreak = async (): Promise<{
 // ─── Notification Actions ─────────────────────────────────────────────────────
 
 export const hasUserOpenedAppToday = async (): Promise<boolean> => {
-  const rows = await db.select().from(userStats).where(eq(userStats.id, 1)).limit(1);
+  const rows = await db
+    .select()
+    .from(userStats)
+    .where(eq(userStats.id, 1))
+    .limit(1);
   if (rows.length === 0) return false;
   return rows[0].lastActiveDate === getTodayDateString();
 };
@@ -219,7 +235,7 @@ export const hasUserOpenedAppToday = async (): Promise<boolean> => {
  * sans le marquer comme appris — utilisé pour construire la notification.
  */
 export const getOrAssignDropForDate = async (
-  date: string
+  date: string,
 ): Promise<{ id: number; term: string; definition: string } | null> => {
   const existing = await db
     .select({ id: drops.id, term: drops.term, definition: drops.definition })
@@ -232,13 +248,16 @@ export const getOrAssignDropForDate = async (
   const random = await db
     .select({ id: drops.id, term: drops.term, definition: drops.definition })
     .from(drops)
-    .where(eq(drops.isLearned, false))
+    .where(and(eq(drops.isLearned, false), isNull(drops.dropDate)))
     .orderBy(sql`RANDOM()`)
     .limit(1);
 
   if (random.length === 0) return null;
 
-  await db.update(drops).set({ dropDate: date }).where(eq(drops.id, random[0].id));
+  await db
+    .update(drops)
+    .set({ dropDate: date })
+    .where(eq(drops.id, random[0].id));
 
   return random[0];
 };

@@ -64,46 +64,37 @@ function LoadingScreen() {
           style={{ width: 110, height: 110, marginTop: 8 }}
         />
         {/* ── Logo ── */}
-        <View style={{ alignItems: "center", marginBottom: 30 }}>
-          <Text
-            style={{
-              fontFamily: "Inter-Regular",
-              fontSize: 11,
-              letterSpacing: 5,
-              color: c.muted,
-              marginBottom: -2,
-            }}
-          >
-            DAILY
+        <View className=" items-center justify-center">
+          <Text className="dark:text-muted-dark tracking-[3px] font-inter text-xl">
+            365
           </Text>
-
-          <View style={{ flexDirection: "row" }}>
+          <View className="flex-row -mt-2 ml-[1px]">
             <Text
+              className="dark:text-primary-dark font-geist-bold text-4xl"
               style={{
-                fontFamily: "Geist-Bold",
-                fontSize: 30,
-                color: c.primary,
+                fontFamily: "DMSerifDisplay_400Regular",
+                fontWeight: "600",
               }}
             >
-              DR
+              W
             </Text>
             <Text
+              className="text-accent font-geist-bold text-4xl"
               style={{
-                fontFamily: "Geist-Bold",
-                fontSize: 30,
-                color: "#E85D26",
+                fontFamily: "DMSerifDisplay_400Regular",
+                fontWeight: "600",
               }}
             >
-              O
+              o
             </Text>
             <Text
+              className="dark:text-primary-dark font-geist-bold text-4xl"
               style={{
-                fontFamily: "Geist-Bold",
-                fontSize: 30,
-                color: c.primary,
+                fontFamily: "DMSerifDisplay_400Regular",
+                fontWeight: "600",
               }}
             >
-              P
+              rds
             </Text>
           </View>
         </View>

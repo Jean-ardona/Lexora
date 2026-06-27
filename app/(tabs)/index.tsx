@@ -152,16 +152,36 @@ export default function Index() {
         <View className="flex-row gap-2 items-center justify-center">
           <Ionicons name="flame-outline" size={32} color="#E85D26" />
           <View>
-            <Text className="dark:text-primary-dark tracking-[3px] font-inter text-sm">
-              DAILY
+            <Text className="dark:text-muted-dark tracking-[3px] font-inter text-sm">
+              365
             </Text>
             <View className="flex-row -mt-2 ml-[1px]">
-              <Text className="dark:text-primary-dark font-geist-bold text-3xl">
-                DR
+              <Text
+                className="dark:text-primary-dark font-geist-bold text-4xl"
+                style={{
+                  fontFamily: "DMSerifDisplay_400Regular",
+                  fontWeight: "600",
+                }}
+              >
+                W
               </Text>
-              <Text className="text-accent font-geist-bold text-3xl">O</Text>
-              <Text className="dark:text-primary-dark font-geist-bold text-3xl">
-                P
+              <Text
+                className="text-accent font-geist-bold text-4xl"
+                style={{
+                  fontFamily: "DMSerifDisplay_400Regular",
+                  fontWeight: "600",
+                }}
+              >
+                o
+              </Text>
+              <Text
+                className="dark:text-primary-dark font-geist-bold text-4xl"
+                style={{
+                  fontFamily: "DMSerifDisplay_400Regular",
+                  fontWeight: "600",
+                }}
+              >
+                rds
               </Text>
             </View>
           </View>
